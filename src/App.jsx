@@ -1,9 +1,21 @@
-function App() {
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import Navigation from './components/Navigation'
+import Home from './pages/Home'
+import Notes from './pages/Notes'
+import Profile from './pages/Profile'
 
+function App() {
   return (
-    <>
-      <h1 className="text-2xl text-blue-600 font-serif  ">Hello World!</h1>
-    </>
+    <BrowserRouter>
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/notes" element={<Notes />} />
+          <Route path="/profile" element={<Profile />} />
+        </Routes>
+      </div>
+    </BrowserRouter>
   )
 }
 
