@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useCourse } from '../contexts/CourseContext'
 import CourseSelectionPrompt from '../components/CourseSelectionPrompt'
+import VoteButtons from '../components/VoteButtons'
 
 function BrowseNotes() {
   const { selectedCourse } = useCourse()
@@ -14,6 +15,7 @@ function BrowseNotes() {
       id: 1,
       title: 'Lecture 1: Introduction to Algorithms',
       author: 'John Doe',
+      authorId: 'user2',
       content: 'Key concepts covered: time complexity, space complexity, Big O notation...',
       tags: ['lecture', 'algorithms'],
       date: '2024-01-15',
@@ -23,6 +25,7 @@ function BrowseNotes() {
       id: 2,
       title: 'Midterm Study Guide',
       author: 'Jane Smith',
+      authorId: 'user3',
       content: 'Comprehensive study guide covering chapters 1-5...',
       tags: ['study-guide', 'exam'],
       date: '2024-01-14',
@@ -32,6 +35,7 @@ function BrowseNotes() {
       id: 3,
       title: 'Problem Set Solutions',
       author: 'Bob Johnson',
+      authorId: 'user4',
       content: 'Solutions to problem set 3 with detailed explanations...',
       tags: ['homework', 'solutions'],
       date: '2024-01-13',
@@ -139,7 +143,14 @@ function BrowseNotes() {
                         </span>
                       ))}
                     </div>
-                    <span className="text-sm text-gray-500">By {note.author}</span>
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm text-gray-500">By {note.author}</span>
+                      <VoteButtons
+                        itemId={`note-${note.id}`}
+                        authorId={note.authorId}
+                        courseId={selectedCourse.id}
+                      />
+                    </div>
                   </div>
                 </div>
               ))

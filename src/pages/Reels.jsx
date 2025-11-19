@@ -1,5 +1,6 @@
 import { useCourse } from '../contexts/CourseContext'
 import CourseSelectionPrompt from '../components/CourseSelectionPrompt'
+import VoteButtons from '../components/VoteButtons'
 
 function Reels() {
   const { selectedCourse } = useCourse()
@@ -10,6 +11,7 @@ function Reels() {
       id: 1,
       title: 'Quick Algorithm Explanation',
       author: 'John Doe',
+      authorId: 'user2',
       thumbnail: '🎥',
       duration: '2:30',
       views: 1234,
@@ -19,6 +21,7 @@ function Reels() {
       id: 2,
       title: 'Problem Solving Walkthrough',
       author: 'Jane Smith',
+      authorId: 'user3',
       thumbnail: '📹',
       duration: '5:15',
       views: 856,
@@ -28,6 +31,7 @@ function Reels() {
       id: 3,
       title: 'Study Tips for CS101',
       author: 'Bob Johnson',
+      authorId: 'user4',
       thumbnail: '🎬',
       duration: '3:45',
       views: 2100,
@@ -84,9 +88,16 @@ function Reels() {
                   </div>
                   <div className="p-4 bg-white">
                     <h3 className="font-semibold text-gray-800 mb-1 line-clamp-2">{reel.title}</h3>
-                    <div className="flex justify-between items-center text-sm text-gray-500">
+                    <div className="flex justify-between items-center text-sm text-gray-500 mb-2">
                       <span>{reel.author}</span>
                       <span>{reel.views.toLocaleString()} views</span>
+                    </div>
+                    <div className="flex justify-end">
+                      <VoteButtons
+                        itemId={`reel-${reel.id}`}
+                        authorId={reel.authorId}
+                        courseId={selectedCourse.id}
+                      />
                     </div>
                   </div>
                 </div>

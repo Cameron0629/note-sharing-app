@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom'
 import SchoolSelection from '../components/profile/SchoolSelection'
 import TotalPoints from '../components/profile/TotalPoints'
 import UserPosts from '../components/profile/UserPosts'
+import Leaderboard from '../components/profile/Leaderboard'
 
 function Profile() {
   const location = useLocation()
@@ -15,7 +16,8 @@ function Profile() {
   const tabs = [
     { id: 'school', label: 'School Selection', component: SchoolSelection },
     { id: 'points', label: 'Total Points', component: TotalPoints },
-    { id: 'posts', label: 'My Posts', component: UserPosts }
+    { id: 'posts', label: 'My Posts', component: UserPosts },
+    { id: 'leaderboard', label: 'Leaderboard', component: Leaderboard }
   ]
 
   const ActiveComponent = tabs.find((tab) => tab.id === activeTab)?.component || TotalPoints

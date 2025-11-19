@@ -1,15 +1,27 @@
+import { useVoting } from '../../contexts/VotingContext'
+import { useCourse } from '../../contexts/CourseContext'
+
 function TotalPoints() {
-  // Sample user stats - in a real app, this would come from an API
+  const { getUserTotalPoints, getUserCoursePoints, getUserAchievements, currentUserId } = useVoting()
+  const { selectedCourse } = useCourse()
+  
+  // Get user stats from voting context
+  const totalPoints = getUserTotalPoints(currentUserId)
+  const coursePoints = selectedCourse ? getUserCoursePoints(currentUserId, selectedCourse.id) : 0
+  const achievements = getUserAchievements(currentUserId)
+  
+  // Calculate level based on points (every 250 points = 1 level)
+  const level = Math.floor(totalPoints / 250) + 1
+  const pointsInCurrentLevel = totalPoints % 250
+  const pointsToNextLevel = 250 - pointsInCurrentLevel
+
+  // Sample additional stats - in a real app, this would come from an API
   const stats = {
-    totalPoints: 1250,
-    level: 5,
     notesPosted: 12,
     notesFavorited: 8,
     reelsWatched: 45,
     contributions: 20
   }
-
-  const pointsToNextLevel = 1500 - stats.totalPoints
 
   return (
     <div>
@@ -19,22 +31,27 @@ function TotalPoints() {
       {/* Main Points Display */}
       <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg p-8 text-white mb-6">
         <div className="text-center">
-          <div className="text-6xl font-bold mb-2">{stats.totalPoints}</div>
+          <div className="text-6xl font-bold mb-2">{totalPoints}</div>
           <div className="text-xl mb-4">Total Points</div>
-          <div className="text-lg">Level {stats.level}</div>
+          <div className="text-lg mb-2">Level {level}</div>
+          {selectedCourse && (
+            <div className="text-base text-purple-100">
+              {coursePoints} points in {selectedCourse.code}
+            </div>
+          )}
         </div>
       </div>
 
       {/* Progress Bar */}
       <div className="mb-8">
         <div className="flex justify-between text-sm text-gray-600 mb-2">
-          <span>Progress to Level {stats.level + 1}</span>
+          <span>Progress to Level {level + 1}</span>
           <span>{pointsToNextLevel} points remaining</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-4">
           <div
             className="bg-purple-500 h-4 rounded-full transition-all"
-            style={{ width: `${(stats.totalPoints / 1500) * 100}%` }}
+            style={{ width: `${(pointsInCurrentLevel / 250) * 100}%` }}
           ></div>
         </div>
       </div>
@@ -61,23 +78,27 @@ function TotalPoints() {
 
       {/* Achievements Section */}
       <div className="mt-8">
-        <h3 className="text-xl font-semibold text-gray-800 mb-4">Recent Achievements</h3>
-        <div className="space-y-2">
-          <div className="flex items-center p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-            <span className="text-2xl mr-3">🏆</span>
-            <div>
-              <div className="font-semibold text-gray-800">First Note Posted</div>
-              <div className="text-sm text-gray-600">+50 points</div>
-            </div>
+        <h3 className="text-xl font-semibold text-gray-800 mb-4">Achievements</h3>
+        {achievements.length === 0 ? (
+          <div className="text-center py-8 bg-gray-50 rounded-lg">
+            <p className="text-gray-500">No achievements yet. Keep contributing to unlock achievements!</p>
           </div>
-          <div className="flex items-center p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-            <span className="text-2xl mr-3">⭐</span>
-            <div>
-              <div className="font-semibold text-gray-800">Level Up!</div>
-              <div className="text-sm text-gray-600">Reached Level {stats.level}</div>
-            </div>
+        ) : (
+          <div className="space-y-2">
+            {achievements.map((achievement) => (
+              <div key={achievement.id} className="flex items-center p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                <span className="text-2xl mr-3">{achievement.icon}</span>
+                <div className="flex-1">
+                  <div className="font-semibold text-gray-800">{achievement.name}</div>
+                  <div className="text-sm text-gray-600">{achievement.description}</div>
+                </div>
+                {achievement.points > 0 && (
+                  <div className="text-sm font-semibold text-purple-600">{achievement.points} pts</div>
+                )}
+              </div>
+            ))}
           </div>
-        </div>
+        )}
       </div>
     </div>
   )
