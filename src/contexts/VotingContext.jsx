@@ -55,65 +55,38 @@ export function VotingProvider({ children }) {
 
   // Vote on a post/reel
   const vote = useCallback((itemId, authorId, courseId, voteType) => {
+    // Calculate points delta first, before state updates
     setVotes(prev => {
       const itemVotes = prev[itemId] || {}
       const currentVote = itemVotes[currentUserId]
       
-      // If clicking the same vote type, remove the vote
-      if (currentVote === voteType) {
-        const newVotes = { ...prev }
-        if (newVotes[itemId]) {
-          const updated = { ...newVotes[itemId] }
-          delete updated[currentUserId]
-          if (Object.keys(updated).length === 0) {
-            delete newVotes[itemId]
-          } else {
-            newVotes[itemId] = updated
-          }
-        }
-        
-        // Remove points if unvoting
-        if (voteType === 'upvote') {
-          setUserPoints(prevPoints => {
-            const userCoursePoints = prevPoints[authorId]?.[courseId] || 0
-            const newPoints = Math.max(0, userCoursePoints - POINTS_PER_UPVOTE)
-            return {
-              ...prevPoints,
-              [authorId]: {
-                ...(prevPoints[authorId] || {}),
-                [courseId]: newPoints
-              }
-            }
-          })
-        } else if (voteType === 'downvote') {
-          setUserPoints(prevPoints => {
-            const userCoursePoints = prevPoints[authorId]?.[courseId] || 0
-            const newPoints = Math.max(0, userCoursePoints - Math.abs(POINTS_PER_DOWNVOTE))
-            return {
-              ...prevPoints,
-              [authorId]: {
-                ...(prevPoints[authorId] || {}),
-                [courseId]: newPoints
-              }
-            }
-          })
-        }
-        
-        return newVotes
-      }
-      
-      // If switching from one vote to another, update
       let pointsDelta = 0
-      if (currentVote === 'upvote' && voteType === 'downvote') {
-        pointsDelta = -POINTS_PER_UPVOTE + POINTS_PER_DOWNVOTE
-      } else if (currentVote === 'downvote' && voteType === 'upvote') {
-        pointsDelta = Math.abs(POINTS_PER_DOWNVOTE) + POINTS_PER_UPVOTE
-      } else if (!currentVote) {
-        // New vote
-        pointsDelta = voteType === 'upvote' ? POINTS_PER_UPVOTE : POINTS_PER_DOWNVOTE
+      let newVoteState = voteType
+      
+      // If clicking the same vote type, remove the vote (unvote)
+      if (currentVote === voteType) {
+        // Unvoting: reverse the effect
+        if (voteType === 'upvote') {
+          pointsDelta = -POINTS_PER_UPVOTE // Remove +10 points
+        } else if (voteType === 'downvote') {
+          pointsDelta = -POINTS_PER_DOWNVOTE // Remove -2 points (adds 2 back)
+        }
+        newVoteState = null // Remove the vote
+      } else {
+        // Switching vote or new vote
+        if (currentVote === 'upvote' && voteType === 'downvote') {
+          // Switching from upvote to downvote: remove +10, add -2 = -12 total
+          pointsDelta = -POINTS_PER_UPVOTE + POINTS_PER_DOWNVOTE
+        } else if (currentVote === 'downvote' && voteType === 'upvote') {
+          // Switching from downvote to upvote: remove -2, add +10 = +12 total
+          pointsDelta = -POINTS_PER_DOWNVOTE + POINTS_PER_UPVOTE
+        } else if (!currentVote) {
+          // New vote
+          pointsDelta = voteType === 'upvote' ? POINTS_PER_UPVOTE : POINTS_PER_DOWNVOTE
+        }
       }
       
-      // Update points
+      // Update points atomically
       if (pointsDelta !== 0) {
         setUserPoints(prevPoints => {
           const userCoursePoints = prevPoints[authorId]?.[courseId] || 0
@@ -128,11 +101,28 @@ export function VotingProvider({ children }) {
         })
       }
       
-      return {
-        ...prev,
-        [itemId]: {
-          ...itemVotes,
-          [currentUserId]: voteType
+      // Update vote state
+      if (newVoteState === null) {
+        // Remove vote
+        const newVotes = { ...prev }
+        if (newVotes[itemId]) {
+          const updated = { ...newVotes[itemId] }
+          delete updated[currentUserId]
+          if (Object.keys(updated).length === 0) {
+            delete newVotes[itemId]
+          } else {
+            newVotes[itemId] = updated
+          }
+        }
+        return newVotes
+      } else {
+        // Add or update vote
+        return {
+          ...prev,
+          [itemId]: {
+            ...itemVotes,
+            [currentUserId]: newVoteState
+          }
         }
       }
     })

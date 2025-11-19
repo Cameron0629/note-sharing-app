@@ -1,10 +1,14 @@
 import { useState } from 'react'
 import { useCourse } from '../contexts/CourseContext'
+import { useNotes } from '../contexts/NotesContext'
+import { useVoting } from '../contexts/VotingContext'
 import CourseSelectionPrompt from '../components/CourseSelectionPrompt'
 import { useNavigate } from 'react-router-dom'
 
 function PostNotes() {
   const { selectedCourse } = useCourse()
+  const { addNote } = useNotes()
+  const { currentUserId } = useVoting()
   const navigate = useNavigate()
   const [formData, setFormData] = useState({
     title: '',
@@ -34,11 +38,15 @@ function PostNotes() {
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
-    // In a real app, submit to backend
-    console.log('Submitting note:', {
-      ...formData,
+    // Add note to the context
+    addNote({
+      title: formData.title,
+      description: formData.description,
+      tags: formData.tags,
+      file: formData.file,
       courseId: selectedCourse.id,
-      courseName: selectedCourse.name
+      authorId: currentUserId,
+      author: 'Current User' // In a real app, this would come from auth
     })
 
     setIsSubmitting(false)
@@ -49,7 +57,7 @@ function PostNotes() {
       tags: '',
       file: null
     })
-    // Show success message and optionally navigate
+    // Show success message and navigate
     alert('Note posted successfully!')
     navigate('/browse-notes')
   }

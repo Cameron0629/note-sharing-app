@@ -1,66 +1,61 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useCourse } from '../contexts/CourseContext'
+import { useNotes } from '../contexts/NotesContext'
 import CourseSelectionPrompt from '../components/CourseSelectionPrompt'
 import VoteButtons from '../components/VoteButtons'
 
 function BrowseNotes() {
   const { selectedCourse } = useCourse()
+  const { getAllNotes } = useNotes()
   const [searchQuery, setSearchQuery] = useState('')
   const [filterTag, setFilterTag] = useState('all')
   const [sortBy, setSortBy] = useState('recent')
-
-  // Sample notes - in a real app, this would come from an API filtered by selectedCourse
-  const allNotes = [
-    {
-      id: 1,
-      title: 'Lecture 1: Introduction to Algorithms',
-      author: 'John Doe',
-      authorId: 'user2',
-      content: 'Key concepts covered: time complexity, space complexity, Big O notation...',
-      tags: ['lecture', 'algorithms'],
-      date: '2024-01-15',
-      courseId: 1
-    },
-    {
-      id: 2,
-      title: 'Midterm Study Guide',
-      author: 'Jane Smith',
-      authorId: 'user3',
-      content: 'Comprehensive study guide covering chapters 1-5...',
-      tags: ['study-guide', 'exam'],
-      date: '2024-01-14',
-      courseId: 1
-    },
-    {
-      id: 3,
-      title: 'Problem Set Solutions',
-      author: 'Bob Johnson',
-      authorId: 'user4',
-      content: 'Solutions to problem set 3 with detailed explanations...',
-      tags: ['homework', 'solutions'],
-      date: '2024-01-13',
-      courseId: 1
-    }
-  ]
 
   if (!selectedCourse) {
     return <CourseSelectionPrompt message="Please select a course to browse notes." />
   }
 
-  // Filter notes by selected course and search query
-  const filteredNotes = allNotes.filter((note) => {
-    const matchesCourse = note.courseId === selectedCourse.id
-    const matchesSearch =
-      note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      note.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      note.author.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesTag = filterTag === 'all' || note.tags.includes(filterTag)
+  // Get all notes from context
+  const allNotes = getAllNotes()
 
-    return matchesCourse && matchesSearch && matchesTag
-  })
+  // Filter and sort notes
+  const filteredNotes = useMemo(() => {
+    // First filter by course, search, and tag
+    let filtered = allNotes.filter((note) => {
+      const matchesCourse = note.courseId === selectedCourse.id
+      const matchesSearch =
+        note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        note.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        note.author.toLowerCase().includes(searchQuery.toLowerCase())
+      const matchesTag = filterTag === 'all' || note.tags.includes(filterTag)
 
-  // Get all unique tags for filter
-  const allTags = ['all', ...new Set(allNotes.flatMap((note) => note.tags))]
+      return matchesCourse && matchesSearch && matchesTag
+    })
+
+    // Then sort
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case 'recent':
+          return new Date(b.date) - new Date(a.date) // Most recent first
+        case 'oldest':
+          return new Date(a.date) - new Date(b.date) // Oldest first
+        case 'title':
+          return a.title.localeCompare(b.title) // A-Z
+        case 'author':
+          return a.author.localeCompare(b.author) // A-Z
+        default:
+          return 0
+      }
+    })
+
+    return sorted
+  }, [allNotes, selectedCourse.id, searchQuery, filterTag, sortBy])
+
+  // Get all unique tags for filter (from all notes, not just filtered)
+  const allTags = useMemo(() => {
+    const courseNotes = allNotes.filter(note => note.courseId === selectedCourse.id)
+    return ['all', ...new Set(courseNotes.flatMap((note) => note.tags))]
+  }, [allNotes, selectedCourse.id])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 p-8">
@@ -120,6 +115,9 @@ function BrowseNotes() {
             {filteredNotes.length === 0 ? (
               <div className="text-center py-12 bg-gray-50 rounded-lg">
                 <p className="text-gray-500 text-lg">No notes found matching your criteria.</p>
+                {allNotes.filter(note => note.courseId === selectedCourse.id).length === 0 && (
+                  <p className="text-gray-400 mt-2">Be the first to post a note for this course!</p>
+                )}
               </div>
             ) : (
               filteredNotes.map((note) => (
@@ -132,6 +130,32 @@ function BrowseNotes() {
                     <span className="text-sm text-gray-500">{note.date}</span>
                   </div>
                   <p className="text-gray-600 mb-4">{note.content}</p>
+                  {note.fileName && (
+                    <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-center gap-2">
+                        <svg
+                          className="w-5 h-5 text-blue-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                          />
+                        </svg>
+                        <div className="flex-1">
+                          <span className="text-sm font-semibold text-blue-900">📎 Attached file: </span>
+                          <span className="text-sm font-medium text-blue-700">{note.fileName}</span>
+                          {note.fileName.match(/\.(jpg|jpeg|png|gif|webp)$/i) && (
+                            <span className="ml-2 text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded">Image</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center">
                     <div className="flex gap-2">
                       {note.tags.map((tag) => (
