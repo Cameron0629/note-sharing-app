@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users collection
+    match /users/{userId} {
+      // Allow users to read their own document
+      allow read: if request.auth != null && request.auth.uid == userId;
+      
+      // Allow users to create their own document (during signup)
+      allow create: if request.auth != null 
+                    && request.auth.uid == userId
+                    && request.resource.data.uid == userId;
+      
+      // Allow users to update their own document
+      allow update: if request.auth != null 
+                    && request.auth.uid == userId
+                    && request.resource.data.uid == userId;
+      
+      // Allow authenticated users to read other users' displayName and totalPoints (for leaderboard)
+      allow read: if request.auth != null;
+    }
+    
+    // Notes collection (if you have one)
+    match /notes/{noteId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null;
+    }
+    
+    // Reels collection (if you have one)
+    match /reels/{reelId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null;
+    }
+  }
+}
+

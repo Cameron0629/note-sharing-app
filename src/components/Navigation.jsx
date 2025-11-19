@@ -1,11 +1,36 @@
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useCourse } from '../contexts/CourseContext'
+import { useAuth } from '../contexts/AuthContext'
 
 function Navigation() {
   const location = useLocation()
+  const navigate = useNavigate()
   const { selectedCourse } = useCourse()
+  const { currentUser, userData, logout } = useAuth()
 
   const isActive = (path) => location.pathname === path
+  const isAuthPage = ['/login', '/signup', '/verify-email', '/forgot-password'].includes(location.pathname)
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+      navigate('/login')
+    } catch (error) {
+      console.error('Failed to logout:', error)
+    }
+  }
+
+  // Don't show navigation on auth pages
+  if (isAuthPage) {
+    return null
+  }
+
+  // Don't show navigation if not authenticated
+  if (!currentUser) {
+    return null
+  }
+
+  const displayName = userData?.displayName || currentUser?.email || 'User'
 
   return (
     <nav className="bg-white shadow-md">
@@ -71,12 +96,23 @@ function Navigation() {
               </Link>
             </div>
           </div>
-          {selectedCourse && (
-            <div className="flex items-center">
-              <span className="text-sm text-gray-600 mr-2">Active Course:</span>
-              <span className="text-sm font-semibold text-blue-600">{selectedCourse.name}</span>
+          <div className="flex items-center gap-4">
+            {selectedCourse && (
+              <div className="flex items-center">
+                <span className="text-sm text-gray-600 mr-2">Active Course:</span>
+                <span className="text-sm font-semibold text-blue-600">{selectedCourse.name}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">{displayName}</span>
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+              >
+                Logout
+              </button>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </nav>
