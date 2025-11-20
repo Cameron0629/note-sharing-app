@@ -1,50 +1,38 @@
-import { useState, useEffect } from 'react'
+import { useMemo } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useNotes } from '../../contexts/NotesContext'
 
 function Leaderboard() {
   const { currentUser } = useAuth()
   const { notes } = useNotes()
-  const [leaderboard, setLeaderboard] = useState([])
-  const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    setLoading(true)
-    try {
-      const userVoteCounts = {}
-      
-      notes.forEach(note => {
-        if (!note.votes) return
+  const leaderboard = useMemo(() => {
+    const userVoteCounts = {}
+    
+    notes.forEach(note => {
+      if (!note.votes) return
 
-        const votes = Object.values(note.votes)
-        const upvotes = votes.filter(v => v === 'upvote').length
-        const downvotes = votes.filter(v => v === 'downvote').length
-        const points = upvotes - downvotes
+      const votes = Object.values(note.votes)
+      const upvotes = votes.filter(v => v === 'upvote').length
+      const downvotes = votes.filter(v => v === 'downvote').length
+      const points = upvotes - downvotes
 
-        if (!userVoteCounts[note.authorId]) {
-          userVoteCounts[note.authorId] = {
-            userId: note.authorId,
-            authorName: note.author,
-            totalPoints: 0
-          }
+      if (!userVoteCounts[note.authorId]) {
+        userVoteCounts[note.authorId] = {
+          userId: note.authorId,
+          authorName: note.author,
+          totalPoints: 0
         }
-        userVoteCounts[note.authorId].totalPoints += points
-      })
+      }
+      userVoteCounts[note.authorId].totalPoints += points
+    })
 
-      const leaderboardData = Object.values(userVoteCounts)
-        .map(user => ({
-          ...user,
-          totalPoints: Math.max(0, user.totalPoints)
-        }))
-        .sort((a, b) => b.totalPoints - a.totalPoints)
-
-      setLeaderboard(leaderboardData)
-    } catch (error) {
-      console.error('Error calculating leaderboard:', error)
-      setLeaderboard([])
-    } finally {
-      setLoading(false)
-    }
+    return Object.values(userVoteCounts)
+      .map(user => ({
+        ...user,
+        totalPoints: Math.max(0, user.totalPoints)
+      }))
+      .sort((a, b) => b.totalPoints - a.totalPoints)
   }, [notes])
 
   const getRankIcon = (rank) => {
@@ -52,15 +40,6 @@ function Leaderboard() {
     if (rank === 2) return '🥈'
     if (rank === 3) return '🥉'
     return `#${rank}`
-  }
-
-  if (loading) {
-    return (
-      <div className="text-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto mb-4"></div>
-        <p className="text-sm sm:text-base text-gray-600">Loading leaderboard...</p>
-      </div>
-    )
   }
 
   return (

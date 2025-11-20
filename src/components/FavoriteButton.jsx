@@ -1,45 +1,33 @@
-import { useState, useEffect } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 
 function FavoriteButton({ noteId }) {
   const { currentUser, userData, updateUserData } = useAuth()
-  const [isFavorited, setIsFavorited] = useState(
-    userData?.favoritedPosts?.includes(noteId) || false
-  )
   const [loading, setLoading] = useState(false)
 
-  // Sync with userData changes
-  useEffect(() => {
-    setIsFavorited(userData?.favoritedPosts?.includes(noteId) || false)
-  }, [userData?.favoritedPosts, noteId])
+  const isFavorited = useMemo(() => 
+    userData?.favoritedPosts?.includes(noteId) || false
+  , [userData?.favoritedPosts, noteId])
 
-  const handleToggleFavorite = async () => {
+  const handleToggleFavorite = useCallback(async () => {
     if (!currentUser || loading) return
 
     setLoading(true)
     try {
       const currentFavorites = userData?.favoritedPosts || []
-      let updatedFavorites
-
-      if (isFavorited) {
-        // Remove from favorites
-        updatedFavorites = currentFavorites.filter(id => id !== noteId)
-      } else {
-        // Add to favorites
-        updatedFavorites = [...currentFavorites, noteId]
-      }
+      const updatedFavorites = isFavorited
+        ? currentFavorites.filter(id => id !== noteId)
+        : [...currentFavorites, noteId]
 
       await updateUserData(currentUser.uid, {
         favoritedPosts: updatedFavorites
       })
-
-      setIsFavorited(!isFavorited)
     } catch (error) {
       console.error('Error updating favorites:', error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentUser, userData?.favoritedPosts, isFavorited, noteId, updateUserData, loading])
 
   return (
     <button

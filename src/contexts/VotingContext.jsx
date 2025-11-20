@@ -13,11 +13,11 @@ export function VotingProvider({ children }) {
   // Get vote count for a note (from the note document)
   const getVoteCount = useCallback((noteId) => {
     const note = notes.find(n => n.id === noteId)
-    if (!note || !note.votes) {
+    if (!note?.votes) {
       return { upvotes: 0, downvotes: 0, net: 0 }
     }
 
-    const votes = note.votes || {}
+    const votes = note.votes
     const upvotes = Object.values(votes).filter(v => v === 'upvote').length
     const downvotes = Object.values(votes).filter(v => v === 'downvote').length
 

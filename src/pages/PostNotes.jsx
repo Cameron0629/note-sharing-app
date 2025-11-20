@@ -21,7 +21,7 @@ function PostNotes() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
 
-  // Verify selected course belongs to user's school
+  // Clear course if it doesn't belong to user's school
   useEffect(() => {
     if (selectedCourse && userData?.schoolId) {
       const course = courses.find(c => c.id === selectedCourse.id)

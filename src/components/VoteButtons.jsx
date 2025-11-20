@@ -7,26 +7,10 @@ function VoteButtons({ itemId, authorId, courseId }) {
   const noteId = itemId.replace('note-', '')
   const voteCount = getVoteCount(noteId)
   const userVote = getUserVote(itemId)
-
-  // Debug logging (remove after fixing)
-  if (process.env.NODE_ENV === 'development') {
-    console.log('VoteButtons:', {
-      currentUser: currentUser?.uid,
-      authorId,
-      isOwnPost: currentUser?.uid === authorId,
-      isDisabled: !currentUser || currentUser?.uid === authorId
-    })
-  }
+  const isDisabled = !currentUser || currentUser.uid === authorId
 
   const handleUpvote = async () => {
-    if (!currentUser) {
-      console.warn('Cannot vote: User not logged in')
-      return
-    }
-    if (currentUser.uid === authorId) {
-      console.warn('Cannot vote: Cannot vote on your own post')
-      return
-    }
+    if (isDisabled) return
     try {
       await vote(itemId, authorId, courseId, 'upvote')
     } catch (error) {
@@ -35,22 +19,13 @@ function VoteButtons({ itemId, authorId, courseId }) {
   }
 
   const handleDownvote = async () => {
-    if (!currentUser) {
-      console.warn('Cannot vote: User not logged in')
-      return
-    }
-    if (currentUser.uid === authorId) {
-      console.warn('Cannot vote: Cannot vote on your own post')
-      return
-    }
+    if (isDisabled) return
     try {
       await vote(itemId, authorId, courseId, 'downvote')
     } catch (error) {
       console.error('Error downvoting:', error)
     }
   }
-
-  const isDisabled = !currentUser || currentUser.uid === authorId
 
   return (
     <div className="flex items-center gap-2">

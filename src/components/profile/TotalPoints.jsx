@@ -1,49 +1,29 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useNotes } from '../../contexts/NotesContext'
 
 function TotalPoints() {
   const { currentUser, userData } = useAuth()
   const { notes } = useNotes()
-  const [totalPoints, setTotalPoints] = useState(0)
-  const [loading, setLoading] = useState(false)
 
-  // Calculate points from votes on user's notes
-  useEffect(() => {
-    if (!currentUser) {
-      setTotalPoints(0)
-      return
-    }
+  const totalPoints = useMemo(() => {
+    if (!currentUser) return 0
 
-    setLoading(true)
-    try {
-      const userNotes = notes.filter(note => note.authorId === currentUser.uid)
-      
-      if (userNotes.length === 0) {
-        setTotalPoints(0)
-        setLoading(false)
-        return
+    const userNotes = notes.filter(note => note.authorId === currentUser.uid)
+    if (userNotes.length === 0) return 0
+
+    let totalUpvotes = 0
+    let totalDownvotes = 0
+
+    userNotes.forEach(note => {
+      if (note.votes) {
+        const votes = Object.values(note.votes)
+        totalUpvotes += votes.filter(v => v === 'upvote').length
+        totalDownvotes += votes.filter(v => v === 'downvote').length
       }
+    })
 
-      let totalUpvotes = 0
-      let totalDownvotes = 0
-
-      userNotes.forEach(note => {
-        if (note.votes) {
-          const votes = Object.values(note.votes)
-          totalUpvotes += votes.filter(v => v === 'upvote').length
-          totalDownvotes += votes.filter(v => v === 'downvote').length
-        }
-      })
-
-      const points = totalUpvotes - totalDownvotes
-      setTotalPoints(Math.max(0, points))
-    } catch (error) {
-      console.error('Error calculating points:', error)
-      setTotalPoints(0)
-    } finally {
-      setLoading(false)
-    }
+    return Math.max(0, totalUpvotes - totalDownvotes)
   }, [currentUser, notes])
 
   const notesPosted = useMemo(() => {
@@ -56,15 +36,6 @@ function TotalPoints() {
   }, [userData?.favoritedPosts])
 
   const level = Math.floor(totalPoints / 250) + 1
-
-  if (loading) {
-    return (
-      <div className="text-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto mb-4"></div>
-        <p className="text-gray-600">Calculating points...</p>
-      </div>
-    )
-  }
 
   return (
     <div>

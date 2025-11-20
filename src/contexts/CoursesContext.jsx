@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { collection, addDoc, getDocs, onSnapshot, query, orderBy, where } from 'firebase/firestore'
+import { collection, addDoc, onSnapshot, query, orderBy, where } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from './AuthContext'
 
@@ -89,6 +89,7 @@ export function CoursesProvider({ children }) {
         code: courseData.code,
         name: courseData.name,
         department: courseData.department || '',
+        professor: courseData.professor || '',
         schoolId: userData.schoolId, // Required - must have schoolId
         createdAt: new Date().toISOString(),
         createdBy: currentUser.uid

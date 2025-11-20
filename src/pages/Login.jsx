@@ -30,11 +30,6 @@ function Login() {
 
     try {
       await login(email, password)
-      // The useEffect will handle navigation when currentUser is set
-      // Reset loading state after a short delay to allow auth state to update
-      setTimeout(() => {
-        setLoading(false)
-      }, 500)
     } catch (err) {
       setError(err.message || 'Failed to log in')
       setLoading(false)

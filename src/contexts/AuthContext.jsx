@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -18,8 +18,23 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
+  // Get user data from Firestore
+  const getUserData = useCallback(async (uid) => {
+    try {
+      const userDocRef = doc(db, 'users', uid)
+      const userDoc = await getDoc(userDocRef)
+      if (userDoc.exists()) {
+        return userDoc.data()
+      }
+      return null
+    } catch (err) {
+      console.error('Error getting user data:', err)
+      return null
+    }
+  }, [])
+
   // Sign up function - creates user document with your schema
-  async function signup(email, password, displayName = '') {
+  const signup = useCallback(async (email, password, displayName = '') => {
     try {
       setError(null)
       const userCredential = await createUserWithEmailAndPassword(auth, email, password)
@@ -40,8 +55,6 @@ export function AuthProvider({ children }) {
       }
 
       await setDoc(doc(db, 'users', user.uid), userDoc)
-      
-      // Load the user data
       setUserData(userDoc)
 
       return user
@@ -49,10 +62,10 @@ export function AuthProvider({ children }) {
       setError(err.message)
       throw err
     }
-  }
+  }, [])
 
   // Login function
-  async function login(email, password) {
+  const login = useCallback(async (email, password) => {
     try {
       setError(null)
       const userCredential = await signInWithEmailAndPassword(auth, email, password)
@@ -61,10 +74,10 @@ export function AuthProvider({ children }) {
       setError(err.message)
       throw err
     }
-  }
+  }, [])
 
   // Logout function
-  async function logout() {
+  const logout = useCallback(async () => {
     try {
       setError(null)
       await signOut(auth)
@@ -73,10 +86,10 @@ export function AuthProvider({ children }) {
       setError(err.message)
       throw err
     }
-  }
+  }, [])
 
   // Resend verification email
-  async function resendVerificationEmail() {
+  const resendVerificationEmail = useCallback(async () => {
     try {
       setError(null)
       if (currentUser && !currentUser.emailVerified) {
@@ -88,10 +101,10 @@ export function AuthProvider({ children }) {
       setError(err.message)
       throw err
     }
-  }
+  }, [currentUser])
 
   // Reset password
-  async function resetPassword(email) {
+  const resetPassword = useCallback(async (email) => {
     try {
       setError(null)
       await sendPasswordResetEmail(auth, email)
@@ -100,51 +113,31 @@ export function AuthProvider({ children }) {
       setError(err.message)
       throw err
     }
-  }
-
-  // Get user data from Firestore
-  async function getUserData(uid) {
-    try {
-      const userDocRef = doc(db, 'users', uid)
-      const userDoc = await getDoc(userDocRef)
-      if (userDoc.exists()) {
-        return userDoc.data()
-      }
-      return null
-    } catch (err) {
-      console.error('Error getting user data:', err)
-      return null
-    }
-  }
+  }, [])
 
   // Update user data in Firestore
-  async function updateUserData(uid, data) {
+  const updateUserData = useCallback(async (uid, data) => {
     try {
       await setDoc(doc(db, 'users', uid), data, { merge: true })
-      // Refresh local user data
       const updatedData = await getUserData(uid)
       setUserData(updatedData)
     } catch (err) {
       console.error('Error updating user data:', err)
       throw err
     }
-  }
+  }, [getUserData])
 
   // Monitor auth state and load user data
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
-          // Refresh token to get latest email verification status
           await user.reload()
           setCurrentUser(user)
-          
-          // Load user data from Firestore
           const data = await getUserData(user.uid)
           setUserData(data)
         } catch (err) {
           console.error('Error loading user data:', err)
-          // Still set the user even if data load fails
           setCurrentUser(user)
         }
       } else {
@@ -155,9 +148,9 @@ export function AuthProvider({ children }) {
     })
 
     return unsubscribe
-  }, [])
+  }, [getUserData])
 
-  const value = {
+  const value = useMemo(() => ({
     currentUser,
     userData,
     signup,
@@ -169,7 +162,7 @@ export function AuthProvider({ children }) {
     updateUserData,
     error,
     loading
-  }
+  }), [currentUser, userData, signup, login, logout, resendVerificationEmail, resetPassword, getUserData, updateUserData, error, loading])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

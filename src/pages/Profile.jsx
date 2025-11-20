@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import SchoolSelection from '../components/profile/SchoolSelection'
@@ -13,38 +13,47 @@ function Profile() {
   const navigate = useNavigate()
   const { currentUser, userData, logout } = useAuth()
   const [activeTab, setActiveTab] = useState(() => {
-    // Get tab from URL hash or default to 'courses'
     const hash = location.hash.replace('#', '')
     return hash || 'courses'
   })
 
-  const tabs = [
+  const tabs = useMemo(() => [
     { id: 'school', label: 'School Selection', component: SchoolSelection },
     { id: 'courses', label: 'Course Selection', component: CourseSelection },
     { id: 'points', label: 'Total Points', component: TotalPoints },
     { id: 'posts', label: 'My Posts', component: UserPosts },
     { id: 'favorited', label: 'Favorited Notes', component: FavoritedNotes },
     { id: 'leaderboard', label: 'Leaderboard', component: Leaderboard }
-  ]
+  ], [])
 
-  const ActiveComponent = tabs.find((tab) => tab.id === activeTab)?.component || CourseSelection
+  const ActiveComponent = useMemo(() => 
+    tabs.find((tab) => tab.id === activeTab)?.component || CourseSelection
+  , [tabs, activeTab])
 
-  const displayName = userData?.displayName || currentUser?.email?.split('@')[0] || 'User'
-  const initials = displayName
-    .split(' ')
-    .map(n => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2) || 'U'
+  const { displayName, initials } = useMemo(() => {
+    const name = userData?.displayName || currentUser?.email?.split('@')[0] || 'User'
+    const init = name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2) || 'U'
+    return { displayName: name, initials: init }
+  }, [userData?.displayName, currentUser?.email])
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     try {
       await logout()
       navigate('/login')
     } catch (error) {
       console.error('Failed to logout:', error)
     }
-  }
+  }, [logout, navigate])
+
+  const handleTabChange = useCallback((tabId) => {
+    setActiveTab(tabId)
+    window.location.hash = tabId
+  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 p-4 sm:p-8">
@@ -77,10 +86,7 @@ function Profile() {
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => {
-                    setActiveTab(tab.id)
-                    window.location.hash = tab.id
-                  }}
+                  onClick={() => handleTabChange(tab.id)}
                   className={`px-4 sm:px-6 py-4 font-medium transition-colors whitespace-nowrap ${
                     activeTab === tab.id
                       ? 'text-purple-600 border-b-2 border-purple-600 bg-white'

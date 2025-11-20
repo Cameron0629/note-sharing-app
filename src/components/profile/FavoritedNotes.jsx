@@ -28,15 +28,16 @@ function FavoritedNotes() {
     return <CourseSelectionPrompt message="Please select a course to view favorited notes." />
   }
 
-  const favoritedNoteIds = userData?.favoritedPosts || []
-  
   const favoritedNotes = useMemo(() => {
+    const favoritedNoteIds = userData?.favoritedPosts || []
+    if (!selectedCourse || !userData?.schoolId) return []
+    
     return notes.filter(note => 
       favoritedNoteIds.includes(note.id) &&
       note.courseId === selectedCourse.id &&
       note.schoolId === userData.schoolId
     )
-  }, [notes, favoritedNoteIds, selectedCourse.id, userData.schoolId])
+  }, [notes, userData?.favoritedPosts, selectedCourse?.id, userData?.schoolId])
 
   // Filter and sort notes
   const filteredNotes = useMemo(() => {
@@ -69,7 +70,6 @@ function FavoritedNotes() {
     return sorted
   }, [favoritedNotes, searchQuery, filterTag, sortBy])
 
-  // Get all unique tags
   const allTags = useMemo(() => {
     const tags = favoritedNotes.flatMap((note) => note.tags || [])
     return ['all', ...new Set(tags)]

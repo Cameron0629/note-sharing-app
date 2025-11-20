@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { collection, query, where, orderBy, addDoc, getDocs, onSnapshot } from 'firebase/firestore'
+import { collection, query, where, orderBy, addDoc, onSnapshot } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from './AuthContext'
 

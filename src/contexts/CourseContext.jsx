@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { useAuth } from './AuthContext'
 import { useCourses } from './CoursesContext'
 
@@ -21,13 +21,13 @@ export function CourseProvider({ children }) {
     }
   }, [userData?.schoolId, courses, selectedCourse])
 
-  const selectCourse = (course) => {
+  const selectCourse = useCallback((course) => {
     setSelectedCourse(course)
-  }
+  }, [])
 
-  const clearCourse = () => {
+  const clearCourse = useCallback(() => {
     setSelectedCourse(null)
-  }
+  }, [])
 
   return (
     <CourseContext.Provider

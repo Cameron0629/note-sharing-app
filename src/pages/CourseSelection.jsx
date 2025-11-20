@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useCourse } from '../contexts/CourseContext'
 import { useCourses } from '../contexts/CoursesContext'
 import { useAuth } from '../contexts/AuthContext'
@@ -15,17 +15,74 @@ function CourseSelection() {
   const [formData, setFormData] = useState({
     code: '',
     name: '',
-    department: ''
+    department: '',
+    professor: ''
   })
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterDepartment, setFilterDepartment] = useState('all')
+  const [filterProfessor, setFilterProfessor] = useState('all')
+  const [sortBy, setSortBy] = useState('code')
 
   const hasSchool = userData?.schoolId && userData.schoolId !== ''
   const userSchool = schools.find(s => s.id === userData?.schoolId)
 
-  const handleCourseSelect = (course) => {
-    selectCourse(course)
-  }
+  // Get unique departments and professors for filters
+  const departments = useMemo(() => {
+    const depts = courses
+      .map(c => c.department)
+      .filter(d => d && d.trim() !== '')
+    return ['all', ...new Set(depts)].sort()
+  }, [courses])
+
+  const professors = useMemo(() => {
+    const profs = courses
+      .map(c => c.professor)
+      .filter(p => p && p.trim() !== '')
+    return ['all', ...new Set(profs)].sort()
+  }, [courses])
+
+  // Filter and sort courses
+  const filteredCourses = useMemo(() => {
+    let filtered = courses.filter((course) => {
+      // Search filter
+      const matchesSearch = !searchQuery || 
+        course.code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        course.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        course.department?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        course.professor?.toLowerCase().includes(searchQuery.toLowerCase())
+
+      // Department filter
+      const matchesDepartment = filterDepartment === 'all' || 
+        course.department === filterDepartment
+
+      // Professor filter
+      const matchesProfessor = filterProfessor === 'all' || 
+        course.professor === filterProfessor
+
+      return matchesSearch && matchesDepartment && matchesProfessor
+    })
+
+    // Sort courses
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case 'code':
+          return (a.code || '').localeCompare(b.code || '')
+        case 'name':
+          return (a.name || '').localeCompare(b.name || '')
+        case 'department':
+          return (a.department || '').localeCompare(b.department || '')
+        case 'professor':
+          return (a.professor || '').localeCompare(b.professor || '')
+        default:
+          return 0
+      }
+    })
+
+    return sorted
+  }, [courses, searchQuery, filterDepartment, filterProfessor, sortBy])
+
 
   const handleAddCourse = async (e) => {
     e.preventDefault()
@@ -44,7 +101,7 @@ function CourseSelection() {
     setSubmitting(true)
     try {
       await addCourse(formData)
-      setFormData({ code: '', name: '', department: '' })
+      setFormData({ code: '', name: '', department: '', professor: '' })
       setShowAddForm(false)
     } catch (err) {
       setError(err.message || 'Failed to add course')
@@ -120,7 +177,7 @@ function CourseSelection() {
                 </div>
               )}
               <form onSubmit={handleAddCourse} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Course Code *
@@ -147,6 +204,8 @@ function CourseSelection() {
                       placeholder="e.g., Introduction to Computer Science"
                     />
                   </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Department
@@ -157,6 +216,18 @@ function CourseSelection() {
                       onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                       placeholder="e.g., Computer Science"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Professor
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.professor}
+                      onChange={(e) => setFormData({ ...formData, professor: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="e.g., Dr. Smith"
                     />
                   </div>
                 </div>
@@ -180,6 +251,67 @@ function CourseSelection() {
             </div>
           )}
 
+          {/* Search and Filter Controls */}
+          {hasSchool && courses.length > 0 && (
+            <div className="mb-6 space-y-4">
+              {/* Search Bar */}
+              <div>
+                <input
+                  type="text"
+                  placeholder="Search courses by code, name, department, or professor..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                />
+              </div>
+
+              {/* Filter and Sort Controls */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Department:</label>
+                  <select
+                    value={filterDepartment}
+                    onChange={(e) => setFilterDepartment(e.target.value)}
+                    className="w-full px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                  >
+                    {departments.map((dept) => (
+                      <option key={dept} value={dept}>
+                        {dept === 'all' ? 'All Departments' : dept}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Professor:</label>
+                  <select
+                    value={filterProfessor}
+                    onChange={(e) => setFilterProfessor(e.target.value)}
+                    className="w-full px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                  >
+                    {professors.map((prof) => (
+                      <option key={prof} value={prof}>
+                        {prof === 'all' ? 'All Professors' : prof}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Sort By:</label>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="w-full px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                  >
+                    <option value="code">Course Code A-Z</option>
+                    <option value="name">Course Name A-Z</option>
+                    <option value="department">Department A-Z</option>
+                    <option value="professor">Professor A-Z</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
           {!hasSchool ? (
             <div className="text-center py-12 bg-gray-50 rounded-lg">
               <p className="text-gray-500 text-lg mb-4">Please select a school first.</p>
@@ -195,12 +327,26 @@ function CourseSelection() {
               <p className="text-gray-500 text-lg mb-4">No courses available for your school yet.</p>
               <p className="text-gray-400">Be the first to add a course!</p>
             </div>
+          ) : filteredCourses.length === 0 ? (
+            <div className="text-center py-12 bg-gray-50 rounded-lg">
+              <p className="text-gray-500 text-lg mb-4">No courses found matching your search criteria.</p>
+              <button
+                onClick={() => {
+                  setSearchQuery('')
+                  setFilterDepartment('all')
+                  setFilterProfessor('all')
+                }}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-semibold transition-colors text-sm"
+              >
+                Clear Filters
+              </button>
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {courses.map((course) => (
+              {filteredCourses.map((course) => (
                 <button
                   key={course.id}
-                  onClick={() => handleCourseSelect(course)}
+                  onClick={() => selectCourse(course)}
                   className={`p-6 rounded-lg border-2 text-left transition-all hover:shadow-lg ${
                     selectedCourse?.id === course.id
                       ? 'border-blue-500 bg-blue-50'
@@ -215,7 +361,10 @@ function CourseSelection() {
                   </div>
                   <p className="text-gray-700 font-medium mb-1">{course.name}</p>
                   {course.department && (
-                    <p className="text-sm text-gray-500">{course.department}</p>
+                    <p className="text-sm text-gray-500 mb-1">{course.department}</p>
+                  )}
+                  {course.professor && (
+                    <p className="text-sm text-gray-600 font-medium">👤 {course.professor}</p>
                   )}
                 </button>
               ))}

@@ -51,26 +51,6 @@ function BrowseNotes() {
     return <CourseSelectionPrompt message="Please select a course to browse notes." />
   }
 
-  // Verify selected course belongs to user's school
-  const course = courses.find(c => c.id === selectedCourse.id)
-  if (!course || course.schoolId !== userData.schoolId) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 p-4 sm:p-8 flex items-center justify-center">
-        <div className="bg-white rounded-lg shadow-lg p-4 sm:p-8 max-w-md w-full text-center">
-          <div className="text-4xl sm:text-6xl mb-4">⚠️</div>
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">Course Not Available</h2>
-          <p className="text-sm sm:text-base text-gray-600 mb-6">This course does not belong to your school. Please select a different course.</p>
-          <button
-            onClick={() => navigate('/profile#courses')}
-            className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 font-semibold transition-colors text-sm sm:text-base"
-          >
-            Select Course
-          </button>
-        </div>
-      </div>
-    )
-  }
-
   // Filter and sort notes
   const filteredNotes = useMemo(() => {
     let filtered = notes.filter((note) => {
