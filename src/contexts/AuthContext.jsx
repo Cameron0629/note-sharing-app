@@ -134,13 +134,19 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // Refresh token to get latest email verification status
-        await user.reload()
-        setCurrentUser(user)
-        
-        // Load user data from Firestore
-        const data = await getUserData(user.uid)
-        setUserData(data)
+        try {
+          // Refresh token to get latest email verification status
+          await user.reload()
+          setCurrentUser(user)
+          
+          // Load user data from Firestore
+          const data = await getUserData(user.uid)
+          setUserData(data)
+        } catch (err) {
+          console.error('Error loading user data:', err)
+          // Still set the user even if data load fails
+          setCurrentUser(user)
+        }
       } else {
         setCurrentUser(null)
         setUserData(null)

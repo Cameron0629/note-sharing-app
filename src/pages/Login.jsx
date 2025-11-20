@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -7,20 +7,36 @@ function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const { login } = useAuth()
+  const { login, currentUser, loading: authLoading } = useAuth()
   const navigate = useNavigate()
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!authLoading && currentUser) {
+      navigate('/course-selection', { replace: true })
+    }
+  }, [currentUser, authLoading, navigate])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    // Prevent double submission
+    if (loading || authLoading) {
+      return
+    }
+    
     setError('')
     setLoading(true)
 
     try {
       await login(email, password)
-      navigate('/course-selection')
+      // The useEffect will handle navigation when currentUser is set
+      // Reset loading state after a short delay to allow auth state to update
+      setTimeout(() => {
+        setLoading(false)
+      }, 500)
     } catch (err) {
       setError(err.message || 'Failed to log in')
-    } finally {
       setLoading(false)
     }
   }

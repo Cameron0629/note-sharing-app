@@ -1,66 +1,132 @@
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { collection, query, where, orderBy, addDoc, getDocs, onSnapshot } from 'firebase/firestore'
+import { db } from '../firebase'
+import { useAuth } from './AuthContext'
 
 const NotesContext = createContext()
 
-// Initial sample notes
-const initialNotes = [
-  {
-    id: 1,
-    title: 'Lecture 1: Introduction to Algorithms',
-    author: 'John Doe',
-    authorId: 'user2',
-    content: 'Key concepts covered: time complexity, space complexity, Big O notation...',
-    tags: ['lecture', 'algorithms'],
-    date: '2024-01-15',
-    courseId: 1
-  },
-  {
-    id: 2,
-    title: 'Midterm Study Guide',
-    author: 'Jane Smith',
-    authorId: 'user3',
-    content: 'Comprehensive study guide covering chapters 1-5...',
-    tags: ['study-guide', 'exam'],
-    date: '2024-01-14',
-    courseId: 1
-  },
-  {
-    id: 3,
-    title: 'Problem Set Solutions',
-    author: 'Bob Johnson',
-    authorId: 'user4',
-    content: 'Solutions to problem set 3 with detailed explanations...',
-    tags: ['homework', 'solutions'],
-    date: '2024-01-13',
-    courseId: 1
-  }
-]
-
 export function NotesProvider({ children }) {
-  const [notes, setNotes] = useState(initialNotes)
-  const [nextId, setNextId] = useState(4) // Next available ID
+  const [notes, setNotes] = useState([])
+  const [loading, setLoading] = useState(true)
+  const { currentUser, userData } = useAuth()
 
-  // Add a new note
-  const addNote = useCallback((noteData) => {
-    const newNote = {
-      id: nextId,
-      title: noteData.title,
-      author: noteData.author || 'Current User',
-      authorId: noteData.authorId || 'user1',
-      content: noteData.description || noteData.content,
-      tags: noteData.tags ? noteData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0) : [],
-      date: new Date().toISOString().split('T')[0], // Current date in YYYY-MM-DD format
-      courseId: noteData.courseId,
-      fileName: noteData.file ? noteData.file.name : null
+  // Listen to notes in Firestore, but only for courses in the user's school
+  useEffect(() => {
+    if (!currentUser || !userData?.schoolId) {
+      setNotes([])
+      setLoading(false)
+      return
     }
-    
-    setNotes(prevNotes => [newNote, ...prevNotes]) // Add to beginning for "most recent" order
-    setNextId(prev => prev + 1)
-    
-    return newNote
-  }, [nextId])
 
-  // Get all notes
+    setLoading(true)
+    const notesRef = collection(db, 'notes')
+    let unsubscribe
+    
+    // Filter notes by schoolId (stored in note document)
+    const q = query(
+      notesRef,
+      where('schoolId', '==', userData.schoolId),
+      orderBy('createdAt', 'desc')
+    )
+
+    const handleSnapshot = (snapshot) => {
+      // Use a Map to prevent duplicates
+      const notesMap = new Map()
+      snapshot.docs.forEach(doc => {
+        notesMap.set(doc.id, {
+          id: doc.id,
+          ...doc.data()
+        })
+      })
+      const notesData = Array.from(notesMap.values())
+      setNotes(notesData)
+      setLoading(false)
+    }
+
+    unsubscribe = onSnapshot(
+      q,
+      handleSnapshot,
+      (error) => {
+        console.error('Error fetching notes:', error)
+        // If index error, try without orderBy
+        if (error.code === 'failed-precondition') {
+          console.warn('Index not found, fetching without orderBy')
+          const qNoOrder = query(
+            notesRef,
+            where('schoolId', '==', userData.schoolId)
+          )
+          unsubscribe = onSnapshot(qNoOrder, (snapshot) => {
+            const notesMap = new Map()
+            snapshot.docs.forEach(doc => {
+              notesMap.set(doc.id, {
+                id: doc.id,
+                ...doc.data()
+              })
+            })
+            const notesData = Array.from(notesMap.values())
+            // Sort by createdAt manually
+            notesData.sort((a, b) => {
+              const dateA = new Date(a.createdAt || a.date || 0)
+              const dateB = new Date(b.createdAt || b.date || 0)
+              return dateB - dateA
+            })
+            setNotes(notesData)
+            setLoading(false)
+          }, (err) => {
+            console.error('Error fetching notes without orderBy:', err)
+            setLoading(false)
+          })
+        } else {
+          setLoading(false)
+        }
+      }
+    )
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe()
+      }
+    }
+  }, [currentUser, userData?.schoolId])
+
+  // Add a new note to Firestore
+  const addNote = useCallback(async (noteData) => {
+    if (!currentUser || !userData) {
+      throw new Error('User must be authenticated to post notes')
+    }
+
+    if (!userData.schoolId) {
+      throw new Error('You must select a school before posting notes')
+    }
+
+    try {
+      const noteDoc = {
+        title: noteData.title,
+        content: noteData.description || noteData.content,
+        tags: noteData.tags ? noteData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0) : [],
+        courseId: noteData.courseId,
+        schoolId: userData.schoolId, // Store schoolId in note for easier filtering
+        authorId: currentUser.uid,
+        author: userData.displayName || currentUser.email || 'Anonymous',
+        createdAt: new Date().toISOString(),
+        date: new Date().toISOString().split('T')[0],
+        fileName: noteData.file ? noteData.file.name : null,
+        fileUrl: null // Will be set if file is uploaded to Storage
+      }
+
+      const docRef = await addDoc(collection(db, 'notes'), noteDoc)
+      
+      // The real-time listener will automatically pick up the new note
+      // No need to manually update the notes array
+      
+      return { id: docRef.id, ...noteDoc }
+    } catch (error) {
+      console.error('Error adding note:', error)
+      throw error
+    }
+  }, [currentUser, userData])
+
+  // Get all notes (already filtered by school)
   const getAllNotes = useCallback(() => {
     return notes
   }, [notes])
@@ -70,15 +136,17 @@ export function NotesProvider({ children }) {
     return notes.filter(note => note.courseId === courseId)
   }, [notes])
 
-  // Delete a note (for future use)
-  const deleteNote = useCallback((noteId) => {
-    setNotes(prevNotes => prevNotes.filter(note => note.id !== noteId))
+  // Delete a note
+  const deleteNote = useCallback(async (noteId) => {
+    // This will be implemented when we add delete functionality
+    console.log('Delete note:', noteId)
   }, [])
 
   return (
     <NotesContext.Provider
       value={{
         notes,
+        loading,
         addNote,
         getAllNotes,
         getNotesByCourse,
@@ -97,4 +165,3 @@ export function useNotes() {
   }
   return context
 }
-

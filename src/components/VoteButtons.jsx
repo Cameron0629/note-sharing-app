@@ -1,27 +1,64 @@
+import { useState, useEffect } from 'react'
 import { useVoting } from '../contexts/VotingContext'
 
 function VoteButtons({ itemId, authorId, courseId }) {
   const { vote, getVoteCount, getUserVote } = useVoting()
-  const voteCount = getVoteCount(itemId)
+  const [voteCount, setVoteCount] = useState({ upvotes: 0, downvotes: 0, net: 0 })
+  const [loading, setLoading] = useState(true)
   const userVote = getUserVote(itemId)
 
-  const handleUpvote = () => {
-    vote(itemId, authorId, courseId, 'upvote')
+  // Load vote count
+  useEffect(() => {
+    const loadVoteCount = async () => {
+      setLoading(true)
+      try {
+        const count = await getVoteCount(itemId)
+        setVoteCount(count)
+      } catch (error) {
+        console.error('Error loading vote count:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadVoteCount()
+    // Refresh vote count periodically or when user votes
+    const interval = setInterval(loadVoteCount, 2000) // Refresh every 2 seconds
+    return () => clearInterval(interval)
+  }, [itemId, getVoteCount, userVote])
+
+  const handleUpvote = async () => {
+    try {
+      await vote(itemId, authorId, courseId, 'upvote')
+      // Refresh vote count after voting
+      const count = await getVoteCount(itemId)
+      setVoteCount(count)
+    } catch (error) {
+      console.error('Error upvoting:', error)
+    }
   }
 
-  const handleDownvote = () => {
-    vote(itemId, authorId, courseId, 'downvote')
+  const handleDownvote = async () => {
+    try {
+      await vote(itemId, authorId, courseId, 'downvote')
+      // Refresh vote count after voting
+      const count = await getVoteCount(itemId)
+      setVoteCount(count)
+    } catch (error) {
+      console.error('Error downvoting:', error)
+    }
   }
 
   return (
     <div className="flex items-center gap-2">
       <button
         onClick={handleUpvote}
+        disabled={loading}
         className={`flex items-center gap-1 px-3 py-1.5 rounded-lg transition-colors ${
           userVote === 'upvote'
             ? 'bg-green-500 text-white hover:bg-green-600'
             : 'bg-green-100 text-green-700 hover:bg-green-200'
-        }`}
+        } disabled:opacity-50`}
         aria-label="Upvote"
       >
         <svg
@@ -39,11 +76,12 @@ function VoteButtons({ itemId, authorId, courseId }) {
       </button>
       <button
         onClick={handleDownvote}
+        disabled={loading}
         className={`flex items-center gap-1 px-3 py-1.5 rounded-lg transition-colors ${
           userVote === 'downvote'
             ? 'bg-red-500 text-white hover:bg-red-600'
             : 'bg-red-100 text-red-700 hover:bg-red-200'
-        }`}
+        } disabled:opacity-50`}
         aria-label="Downvote"
       >
         <svg
@@ -68,4 +106,3 @@ function VoteButtons({ itemId, authorId, courseId }) {
 }
 
 export default VoteButtons
-

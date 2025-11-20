@@ -20,20 +20,55 @@ service cloud.firestore {
       allow read: if request.auth != null;
     }
     
-    // Notes collection (if you have one)
+    // Schools collection
+    match /schools/{schoolId} {
+      // Anyone authenticated can read schools
+      allow read: if request.auth != null;
+      // Anyone authenticated can create schools
+      allow create: if request.auth != null;
+      // Only creator can update/delete (optional - for now allow all authenticated users)
+      allow update, delete: if request.auth != null;
+    }
+    
+    // Courses collection
+    match /courses/{courseId} {
+      // Anyone authenticated can read courses
+      allow read: if request.auth != null;
+      // Anyone authenticated can create courses
+      allow create: if request.auth != null;
+      // Only creator can update/delete (optional - for now allow all authenticated users)
+      allow update, delete: if request.auth != null;
+    }
+    
+    // Notes collection
     match /notes/{noteId} {
+      // Anyone authenticated can read notes
+      allow read: if request.auth != null;
+      // Anyone authenticated can create notes
+      allow create: if request.auth != null;
+      // Only author can update/delete their own notes
+      allow update, delete: if request.auth != null 
+                            && request.auth.uid == resource.data.authorId;
+    }
+    
+    // Reels collection
+    match /reels/{reelId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null;
       allow update: if request.auth != null;
       allow delete: if request.auth != null;
     }
     
-    // Reels collection (if you have one)
-    match /reels/{reelId} {
+    // Votes collection
+    match /votes/{voteId} {
+      // Anyone authenticated can read votes (to see vote counts)
       allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null;
-      allow delete: if request.auth != null;
+      // Users can create their own votes
+      allow create: if request.auth != null 
+                  && request.auth.uid == request.resource.data.userId;
+      // Users can update/delete their own votes
+      allow update, delete: if request.auth != null 
+                          && request.auth.uid == resource.data.userId;
     }
   }
 }

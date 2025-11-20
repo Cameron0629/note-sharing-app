@@ -1,26 +1,91 @@
-import { useVoting } from '../../contexts/VotingContext'
-import { useCourse } from '../../contexts/CourseContext'
+import { useMemo, useState, useEffect } from 'react'
+import { useAuth } from '../../contexts/AuthContext'
+import { useNotes } from '../../contexts/NotesContext'
+import { collection, query, where, getDocs } from 'firebase/firestore'
+import { db } from '../../firebase'
 
 function TotalPoints() {
-  const { getUserTotalPoints, getUserCoursePoints, getUserAchievements, currentUserId } = useVoting()
-  const { selectedCourse } = useCourse()
-  
-  // Get user stats from voting context
-  const totalPoints = getUserTotalPoints(currentUserId)
-  const coursePoints = selectedCourse ? getUserCoursePoints(currentUserId, selectedCourse.id) : 0
-  const achievements = getUserAchievements(currentUserId)
-  
+  const { currentUser, userData } = useAuth()
+  const { notes } = useNotes()
+  const [totalPoints, setTotalPoints] = useState(0)
+  const [loading, setLoading] = useState(true)
+
+  // Calculate points from votes on user's notes
+  useEffect(() => {
+    const calculatePoints = async () => {
+      if (!currentUser) {
+        setTotalPoints(0)
+        setLoading(false)
+        return
+      }
+
+      try {
+        // Get all notes created by this user
+        const userNotes = notes.filter(note => note.authorId === currentUser.uid)
+        
+        if (userNotes.length === 0) {
+          setTotalPoints(0)
+          setLoading(false)
+          return
+        }
+
+        // Get all votes for these notes
+        const votesRef = collection(db, 'votes')
+        const noteIds = userNotes.map(note => note.id)
+
+        // Firestore 'in' operator supports up to 10 items, so batch if needed
+        let allVotes = []
+        if (noteIds.length > 0) {
+          for (let i = 0; i < noteIds.length; i += 10) {
+            const batch = noteIds.slice(i, i + 10)
+            const q = query(votesRef, where('noteId', 'in', batch))
+            const snapshot = await getDocs(q)
+            allVotes = [...allVotes, ...snapshot.docs.map(doc => doc.data())]
+          }
+        }
+
+        // Calculate points: sum of upvotes - sum of downvotes
+        const upvotes = allVotes.filter(v => v.type === 'upvote').length
+        const downvotes = allVotes.filter(v => v.type === 'downvote').length
+        const points = upvotes - downvotes
+
+        setTotalPoints(Math.max(0, points))
+      } catch (error) {
+        console.error('Error calculating points:', error)
+        setTotalPoints(0)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    calculatePoints()
+    // Recalculate every 5 seconds to get real-time updates
+    const interval = setInterval(calculatePoints, 5000)
+    return () => clearInterval(interval)
+  }, [currentUser, notes])
+
+  // Calculate stats
+  const notesPosted = useMemo(() => {
+    if (!currentUser) return 0
+    return notes.filter(note => note.authorId === currentUser.uid).length
+  }, [notes, currentUser])
+
+  const notesFavorited = useMemo(() => {
+    return userData?.favoritedPosts?.length || 0
+  }, [userData?.favoritedPosts])
+
   // Calculate level based on points (every 250 points = 1 level)
   const level = Math.floor(totalPoints / 250) + 1
   const pointsInCurrentLevel = totalPoints % 250
   const pointsToNextLevel = 250 - pointsInCurrentLevel
 
-  // Sample additional stats - in a real app, this would come from an API
-  const stats = {
-    notesPosted: 12,
-    notesFavorited: 8,
-    reelsWatched: 45,
-    contributions: 20
+  if (loading) {
+    return (
+      <div className="text-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto mb-4"></div>
+        <p className="text-gray-600">Calculating points...</p>
+      </div>
+    )
   }
 
   return (
@@ -34,11 +99,9 @@ function TotalPoints() {
           <div className="text-6xl font-bold mb-2">{totalPoints}</div>
           <div className="text-xl mb-4">Total Points</div>
           <div className="text-lg mb-2">Level {level}</div>
-          {selectedCourse && (
-            <div className="text-base text-purple-100">
-              {coursePoints} points in {selectedCourse.code}
-            </div>
-          )}
+          <p className="text-sm text-purple-100 mt-2">
+            Points = (Upvotes on your posts) - (Downvotes on your posts)
+          </p>
         </div>
       </div>
 
@@ -57,52 +120,18 @@ function TotalPoints() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-          <div className="text-2xl font-bold text-blue-700">{stats.notesPosted}</div>
+          <div className="text-2xl font-bold text-blue-700">{notesPosted}</div>
           <div className="text-sm text-gray-600">Notes Posted</div>
         </div>
         <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-          <div className="text-2xl font-bold text-green-700">{stats.notesFavorited}</div>
+          <div className="text-2xl font-bold text-green-700">{notesFavorited}</div>
           <div className="text-sm text-gray-600">Notes Favorited</div>
         </div>
-        <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-          <div className="text-2xl font-bold text-yellow-700">{stats.reelsWatched}</div>
-          <div className="text-sm text-gray-600">Reels Watched</div>
-        </div>
-        <div className="bg-pink-50 p-4 rounded-lg border border-pink-200">
-          <div className="text-2xl font-bold text-pink-700">{stats.contributions}</div>
-          <div className="text-sm text-gray-600">Total Contributions</div>
-        </div>
-      </div>
-
-      {/* Achievements Section */}
-      <div className="mt-8">
-        <h3 className="text-xl font-semibold text-gray-800 mb-4">Achievements</h3>
-        {achievements.length === 0 ? (
-          <div className="text-center py-8 bg-gray-50 rounded-lg">
-            <p className="text-gray-500">No achievements yet. Keep contributing to unlock achievements!</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {achievements.map((achievement) => (
-              <div key={achievement.id} className="flex items-center p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                <span className="text-2xl mr-3">{achievement.icon}</span>
-                <div className="flex-1">
-                  <div className="font-semibold text-gray-800">{achievement.name}</div>
-                  <div className="text-sm text-gray-600">{achievement.description}</div>
-                </div>
-                {achievement.points > 0 && (
-                  <div className="text-sm font-semibold text-purple-600">{achievement.points} pts</div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   )
 }
 
 export default TotalPoints
-

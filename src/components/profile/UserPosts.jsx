@@ -1,44 +1,45 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
+import { useAuth } from '../../contexts/AuthContext'
+import { useNotes } from '../../contexts/NotesContext'
+import { useCourses } from '../../contexts/CoursesContext'
+import { useNavigate } from 'react-router-dom'
 
 function UserPosts() {
-  const [activeView, setActiveView] = useState('my-posts') // 'my-posts' or 'favorited'
+  const { currentUser, userData } = useAuth()
+  const { notes } = useNotes()
+  const { courses } = useCourses()
+  const navigate = useNavigate()
+  const [activeView, setActiveView] = useState('my-posts')
 
-  // Sample posts - in a real app, this would come from an API
-  const myPosts = [
-    {
-      id: 1,
-      title: 'Lecture 1: Introduction to Algorithms',
-      course: 'CS101',
-      date: '2024-01-15',
-      views: 234,
-      favorites: 12
-    },
-    {
-      id: 2,
-      title: 'Midterm Study Guide',
-      course: 'CS101',
-      date: '2024-01-14',
-      views: 456,
-      favorites: 28
-    }
-  ]
+  // Get user's posts
+  const myPosts = useMemo(() => {
+    if (!currentUser) return []
+    return notes
+      .filter(note => note.authorId === currentUser.uid)
+      .map(note => {
+        const course = courses.find(c => c.id === note.courseId)
+        return {
+          ...note,
+          course: course ? `${course.code} - ${course.name}` : 'Unknown Course'
+        }
+      })
+      .sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date))
+  }, [notes, currentUser, courses])
 
-  const favoritedPosts = [
-    {
-      id: 3,
-      title: 'Problem Set Solutions',
-      course: 'MATH201',
-      author: 'Jane Smith',
-      date: '2024-01-13'
-    },
-    {
-      id: 4,
-      title: 'Physics Lab Notes',
-      course: 'PHYS150',
-      author: 'Bob Johnson',
-      date: '2024-01-12'
-    }
-  ]
+  // Get favorited posts
+  const favoritedPosts = useMemo(() => {
+    const favoritedIds = userData?.favoritedPosts || []
+    return notes
+      .filter(note => favoritedIds.includes(note.id))
+      .map(note => {
+        const course = courses.find(c => c.id === note.courseId)
+        return {
+          ...note,
+          course: course ? `${course.code} - ${course.name}` : 'Unknown Course'
+        }
+      })
+      .sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date))
+  }, [notes, userData?.favoritedPosts, courses])
 
   const activePosts = activeView === 'my-posts' ? myPosts : favoritedPosts
 
@@ -55,7 +56,7 @@ function UserPosts() {
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            My Posts
+            My Posts ({myPosts.length})
           </button>
           <button
             onClick={() => setActiveView('favorited')}
@@ -65,61 +66,66 @@ function UserPosts() {
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            Favorited Posts
+            Favorited Posts ({favoritedPosts.length})
           </button>
         </div>
       </div>
 
       {activePosts.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <p className="text-gray-500 text-lg">
+          <p className="text-gray-500 text-base sm:text-lg">
             {activeView === 'my-posts'
               ? "You haven't posted any notes yet."
               : "You haven't favorited any posts yet."}
           </p>
+          {activeView === 'my-posts' && (
+            <button
+              onClick={() => navigate('/post-notes')}
+              className="mt-4 px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 font-semibold transition-colors text-sm sm:text-base"
+            >
+              Post Your First Note
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-4">
           {activePosts.map((post) => (
             <div
               key={post.id}
-              className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
+              className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 hover:shadow-lg transition-shadow"
             >
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-1">{post.title}</h3>
-                  <div className="flex items-center gap-4 text-sm text-gray-600">
-                    <span className="font-medium">{post.course}</span>
-                    <span>{post.date}</span>
-                    {activeView === 'my-posts' && (
-                      <>
-                        <span>{post.views} views</span>
-                        <span>❤️ {post.favorites} favorites</span>
-                      </>
-                    )}
-                    {activeView === 'favorited' && (
-                      <span>By {post.author}</span>
-                    )}
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2 gap-2">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-1 break-words">{post.title}</h3>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-gray-600">
+                    <span className="font-medium truncate">{post.course}</span>
+                    <span className="whitespace-nowrap">{post.date || post.createdAt?.split('T')[0]}</span>
                   </div>
+                  <p className="text-sm sm:text-base text-gray-600 mt-2 line-clamp-2">{post.content}</p>
                 </div>
-                <div className="flex gap-2">
-                  {activeView === 'my-posts' && (
-                    <>
-                      <button className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200">
-                        Edit
-                      </button>
-                      <button className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200">
-                        Delete
-                      </button>
-                    </>
-                  )}
-                  {activeView === 'favorited' && (
-                    <button className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200">
+                {activeView === 'my-posts' && (
+                  <div className="flex gap-2 sm:ml-4 flex-shrink-0">
+                    <button
+                      onClick={() => navigate(`/browse-notes`)}
+                      className="px-3 py-1 text-xs sm:text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 whitespace-nowrap"
+                    >
                       View
                     </button>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
+              {post.tags && post.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {post.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -129,4 +135,3 @@ function UserPosts() {
 }
 
 export default UserPosts
-

@@ -1,14 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useCourse } from '../contexts/CourseContext'
 import { useNotes } from '../contexts/NotesContext'
-import { useVoting } from '../contexts/VotingContext'
+import { useAuth } from '../contexts/AuthContext'
+import { useCourses } from '../contexts/CoursesContext'
 import CourseSelectionPrompt from '../components/CourseSelectionPrompt'
 import { useNavigate } from 'react-router-dom'
 
 function PostNotes() {
-  const { selectedCourse } = useCourse()
+  const { selectedCourse, clearCourse } = useCourse()
   const { addNote } = useNotes()
-  const { currentUserId } = useVoting()
+  const { currentUser, userData } = useAuth()
+  const { courses } = useCourses()
   const navigate = useNavigate()
   const [formData, setFormData] = useState({
     title: '',
@@ -17,6 +19,36 @@ function PostNotes() {
     file: null
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState('')
+
+  // Verify selected course belongs to user's school
+  useEffect(() => {
+    if (selectedCourse && userData?.schoolId) {
+      const course = courses.find(c => c.id === selectedCourse.id)
+      if (!course || course.schoolId !== userData.schoolId) {
+        clearCourse()
+        navigate('/course-selection')
+      }
+    }
+  }, [selectedCourse, userData?.schoolId, courses, clearCourse, navigate])
+
+  if (!userData?.schoolId) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 p-8 flex items-center justify-center">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
+          <div className="text-6xl mb-4">🏫</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">School Selection Required</h2>
+          <p className="text-gray-600 mb-6">Please select a school in your profile settings to post notes.</p>
+          <button
+            onClick={() => navigate('/profile#school')}
+            className="px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 font-semibold transition-colors"
+          >
+            Go to School Selection
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   if (!selectedCourse) {
     return <CourseSelectionPrompt message="Please select a course to post notes." />
@@ -33,45 +65,50 @@ function PostNotes() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setError('')
     setIsSubmitting(true)
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    try {
+      await addNote({
+        title: formData.title,
+        description: formData.description,
+        tags: formData.tags,
+        file: formData.file,
+        courseId: selectedCourse.id
+      })
 
-    // Add note to the context
-    addNote({
-      title: formData.title,
-      description: formData.description,
-      tags: formData.tags,
-      file: formData.file,
-      courseId: selectedCourse.id,
-      authorId: currentUserId,
-      author: 'Current User' // In a real app, this would come from auth
-    })
-
-    setIsSubmitting(false)
-    // Reset form
-    setFormData({
-      title: '',
-      description: '',
-      tags: '',
-      file: null
-    })
-    // Show success message and navigate
-    alert('Note posted successfully!')
-    navigate('/browse-notes')
+      // Reset form
+      setFormData({
+        title: '',
+        description: '',
+        tags: '',
+        file: null
+      })
+      
+      // Navigate to browse notes
+      navigate('/browse-notes')
+    } catch (err) {
+      setError(err.message || 'Failed to post note')
+      setIsSubmitting(false)
+    }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 p-4 sm:p-8">
       <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <div className="mb-6">
-            <h1 className="text-4xl font-bold text-gray-800 mb-2">Post Notes</h1>
-            <p className="text-gray-600">
+        <div className="bg-white rounded-lg shadow-lg p-4 sm:p-8">
+          <div className="mb-4 sm:mb-6">
+            <h1 className="text-2xl sm:text-4xl font-bold text-gray-800 mb-2">Post Notes</h1>
+            <p className="text-sm sm:text-base text-gray-600">
               Course: <span className="font-semibold">{selectedCourse.code} - {selectedCourse.name}</span>
             </p>
           </div>
+
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
@@ -139,18 +176,18 @@ function PostNotes() {
               )}
             </div>
 
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 sm:flex-initial px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? 'Posting...' : 'Post Note'}
               </button>
               <button
                 type="button"
                 onClick={() => navigate('/browse-notes')}
-                className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-semibold transition-colors"
+                className="flex-1 sm:flex-initial px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-semibold transition-colors"
               >
                 Cancel
               </button>
@@ -163,4 +200,3 @@ function PostNotes() {
 }
 
 export default PostNotes
-
