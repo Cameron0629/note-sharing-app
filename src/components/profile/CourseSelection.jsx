@@ -62,17 +62,17 @@ function CourseSelection() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Course Selection</h2>
-          <p className="text-gray-600">
-            Select a course to browse notes, post content, and view reels for that course.
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 gap-3">
+        <div className="flex-1">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">Course Selection</h2>
+          <p className="text-sm sm:text-base text-gray-600">
+            Select a course to browse notes and post content for that course.
           </p>
         </div>
         {hasSchool && (
           <button
             onClick={() => setShowAddForm(!showAddForm)}
-            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 font-semibold transition-colors text-sm"
+            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 font-semibold transition-colors text-sm whitespace-nowrap self-start sm:self-auto"
           >
             {showAddForm ? 'Cancel' : '+ Add Course'}
           </button>

@@ -69,16 +69,16 @@ function SchoolSelection() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold text-gray-800">School Selection</h2>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-3">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800">School Selection</h2>
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 font-semibold transition-colors text-sm"
+          className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 font-semibold transition-colors text-sm whitespace-nowrap self-start sm:self-auto"
         >
           {showAddForm ? 'Cancel' : '+ Add School'}
         </button>
       </div>
-      <p className="text-gray-600 mb-6">
+      <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
         Select your school to connect with other students and access school-specific content.
       </p>
 

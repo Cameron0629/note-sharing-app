@@ -15,7 +15,7 @@ function VerifyEmail() {
     // Check if user is verified
     if (currentUser) {
       if (currentUser.emailVerified) {
-        navigate('/course-selection')
+        navigate('/browse-notes')
       } else {
         setChecking(false)
       }
@@ -69,7 +69,7 @@ function VerifyEmail() {
       if (currentUser.emailVerified) {
         setMessage('Email verified! Redirecting...')
         setTimeout(() => {
-          navigate('/course-selection')
+          navigate('/browse-notes')
         }, 1500)
       } else {
         setError('Email not verified yet. Please check your inbox and click the verification link.')
@@ -83,23 +83,23 @@ function VerifyEmail() {
 
   if (checking) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-100 flex items-center justify-center p-8">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-100 flex items-center justify-center p-4 sm:p-8">
+        <div className="bg-white rounded-lg shadow-lg p-4 sm:p-8 max-w-md w-full text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Checking verification status...</p>
+          <p className="text-sm sm:text-base text-gray-600">Checking verification status...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-100 flex items-center justify-center p-8">
-      <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
-        <div className="text-center mb-6">
-          <div className="text-6xl mb-4">📧</div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Verify Your Email</h1>
-          <p className="text-gray-600">
-            We've sent a verification email to <strong>{currentUser?.email}</strong>
+    <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-100 flex items-center justify-center p-4 sm:p-8">
+      <div className="bg-white rounded-lg shadow-lg p-4 sm:p-8 max-w-md w-full">
+        <div className="text-center mb-4 sm:mb-6">
+          <div className="text-4xl sm:text-6xl mb-4">📧</div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">Verify Your Email</h1>
+          <p className="text-sm sm:text-base text-gray-600 break-words">
+            We've sent a verification email to <strong className="break-all">{currentUser?.email}</strong>
           </p>
         </div>
 

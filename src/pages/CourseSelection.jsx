@@ -55,7 +55,7 @@ function CourseSelection() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 sm:p-8 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading courses...</p>
@@ -65,14 +65,14 @@ function CourseSelection() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 sm:p-8">
       <div className="max-w-6xl mx-auto">
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h1 className="text-4xl font-bold text-gray-800 mb-2">Course Selection</h1>
-              <p className="text-gray-600">
-                Select a course to browse notes, post content, and view reels for that course.
+        <div className="bg-white rounded-lg shadow-lg p-4 sm:p-8">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 gap-4">
+            <div className="flex-1">
+              <h1 className="text-2xl sm:text-4xl font-bold text-gray-800 mb-2">Course Selection</h1>
+              <p className="text-sm sm:text-base text-gray-600">
+                Select a course to browse notes and post content for that course.
               </p>
               {!hasSchool && (
                 <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -99,7 +99,7 @@ function CourseSelection() {
             {hasSchool && (
               <button
                 onClick={() => setShowAddForm(!showAddForm)}
-                className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 font-semibold transition-colors"
+                className="px-4 sm:px-6 py-2 sm:py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 font-semibold transition-colors text-sm sm:text-base whitespace-nowrap"
               >
                 {showAddForm ? 'Cancel' : '+ Add Course'}
               </button>
@@ -223,24 +223,18 @@ function CourseSelection() {
           )}
 
           {selectedCourse && (
-            <div className="mt-6 flex gap-4">
+            <div className="mt-6 flex flex-col sm:flex-row gap-3 sm:gap-4">
               <button
                 onClick={() => navigate('/browse-notes')}
-                className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-semibold transition-colors"
+                className="flex-1 sm:flex-initial px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-semibold transition-colors"
               >
                 Browse Notes
               </button>
               <button
                 onClick={() => navigate('/post-notes')}
-                className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 font-semibold transition-colors"
+                className="flex-1 sm:flex-initial px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 font-semibold transition-colors"
               >
                 Post Notes
-              </button>
-              <button
-                onClick={() => navigate('/reels')}
-                className="px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 font-semibold transition-colors"
-              >
-                View Reels
               </button>
             </div>
           )}

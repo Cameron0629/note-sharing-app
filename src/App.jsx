@@ -13,16 +13,15 @@ import VerifyEmail from './pages/VerifyEmail'
 import ForgotPassword from './pages/ForgotPassword'
 import BrowseNotes from './pages/BrowseNotes'
 import PostNotes from './pages/PostNotes'
-import Reels from './pages/Reels'
 import Profile from './pages/Profile'
 
 function App() {
   return (
     <AuthProvider>
-      <VotingProvider>
-        <SchoolsProvider>
-          <CoursesProvider>
-            <NotesProvider>
+      <SchoolsProvider>
+        <CoursesProvider>
+          <NotesProvider>
+            <VotingProvider>
               <CourseProvider>
                 <BrowserRouter>
                   <div className="min-h-screen bg-gray-50">
@@ -68,14 +67,6 @@ function App() {
                         }
                       />
                       <Route
-                        path="/reels"
-                        element={
-                          <ProtectedRoute>
-                            <Reels />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
                         path="/profile"
                         element={
                           <ProtectedRoute>
@@ -87,10 +78,10 @@ function App() {
                   </div>
                 </BrowserRouter>
               </CourseProvider>
-            </NotesProvider>
-          </CoursesProvider>
-        </SchoolsProvider>
-      </VotingProvider>
+            </VotingProvider>
+          </NotesProvider>
+        </CoursesProvider>
+      </SchoolsProvider>
     </AuthProvider>
   )
 }

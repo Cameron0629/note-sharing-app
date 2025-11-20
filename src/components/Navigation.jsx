@@ -43,7 +43,6 @@ function Navigation() {
   const navLinks = [
     { path: '/browse-notes', label: 'Browse Notes', icon: '📚' },
     { path: '/post-notes', label: 'Post Notes', icon: '✍️' },
-    { path: '/reels', label: 'Reels', icon: '🎬' },
     { path: '/profile', label: 'Profile', icon: '👤' }
   ]
 

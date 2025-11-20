@@ -1,21 +1,25 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { useAuth } from './AuthContext'
+import { useCourses } from './CoursesContext'
 
 const CourseContext = createContext()
 
 export function CourseProvider({ children }) {
   const [selectedCourse, setSelectedCourse] = useState(null)
   const { userData } = useAuth()
+  const { courses } = useCourses()
 
-  // Clear selected course when school changes
+  // Clear selected course when school changes or course is no longer valid
   useEffect(() => {
-    if (selectedCourse) {
-      // If selected course doesn't belong to current school, clear it
-      if (userData?.schoolId && selectedCourse.schoolId !== userData.schoolId) {
+    if (selectedCourse && userData?.schoolId) {
+      const courseExists = courses.some(c => c.id === selectedCourse.id && c.schoolId === userData.schoolId)
+      if (!courseExists) {
         setSelectedCourse(null)
       }
+    } else if (!userData?.schoolId) {
+      setSelectedCourse(null)
     }
-  }, [userData?.schoolId, selectedCourse])
+  }, [userData?.schoolId, courses, selectedCourse])
 
   const selectCourse = (course) => {
     setSelectedCourse(course)

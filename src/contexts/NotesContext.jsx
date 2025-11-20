@@ -111,7 +111,8 @@ export function NotesProvider({ children }) {
         createdAt: new Date().toISOString(),
         date: new Date().toISOString().split('T')[0],
         fileName: noteData.file ? noteData.file.name : null,
-        fileUrl: null // Will be set if file is uploaded to Storage
+        fileUrl: null, // Will be set if file is uploaded to Storage
+        votes: {} // Initialize votes field as empty object
       }
 
       const docRef = await addDoc(collection(db, 'notes'), noteDoc)
@@ -126,31 +127,12 @@ export function NotesProvider({ children }) {
     }
   }, [currentUser, userData])
 
-  // Get all notes (already filtered by school)
-  const getAllNotes = useCallback(() => {
-    return notes
-  }, [notes])
-
-  // Get notes for a specific course
-  const getNotesByCourse = useCallback((courseId) => {
-    return notes.filter(note => note.courseId === courseId)
-  }, [notes])
-
-  // Delete a note
-  const deleteNote = useCallback(async (noteId) => {
-    // This will be implemented when we add delete functionality
-    console.log('Delete note:', noteId)
-  }, [])
-
   return (
     <NotesContext.Provider
       value={{
         notes,
         loading,
-        addNote,
-        getAllNotes,
-        getNotesByCourse,
-        deleteNote
+        addNote
       }}
     >
       {children}

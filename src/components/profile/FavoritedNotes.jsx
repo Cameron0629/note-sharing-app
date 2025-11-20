@@ -8,7 +8,7 @@ import FavoriteButton from '../FavoriteButton'
 
 function FavoritedNotes() {
   const { selectedCourse } = useCourse()
-  const { getAllNotes, loading } = useNotes()
+  const { notes, loading } = useNotes()
   const { userData } = useAuth()
   const [searchQuery, setSearchQuery] = useState('')
   const [filterTag, setFilterTag] = useState('all')
@@ -17,9 +17,9 @@ function FavoritedNotes() {
   if (!userData?.schoolId) {
     return (
       <div className="text-center py-12 bg-gray-50 rounded-lg">
-        <div className="text-6xl mb-4">🏫</div>
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">School Selection Required</h2>
-        <p className="text-gray-600 mb-6">Please select a school to view favorited notes.</p>
+        <div className="text-4xl sm:text-6xl mb-4">🏫</div>
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">School Selection Required</h2>
+        <p className="text-sm sm:text-base text-gray-600 mb-6">Please select a school to view favorited notes.</p>
       </div>
     )
   }
@@ -28,17 +28,15 @@ function FavoritedNotes() {
     return <CourseSelectionPrompt message="Please select a course to view favorited notes." />
   }
 
-  // Get all notes and filter by favorites
-  const allNotes = getAllNotes()
   const favoritedNoteIds = userData?.favoritedPosts || []
   
-  // Filter notes: must be favorited, match course, and match school
   const favoritedNotes = useMemo(() => {
-    return allNotes.filter(note => 
+    return notes.filter(note => 
       favoritedNoteIds.includes(note.id) &&
-      note.courseId === selectedCourse.id
+      note.courseId === selectedCourse.id &&
+      note.schoolId === userData.schoolId
     )
-  }, [allNotes, favoritedNoteIds, selectedCourse.id])
+  }, [notes, favoritedNoteIds, selectedCourse.id, userData.schoolId])
 
   // Filter and sort notes
   const filteredNotes = useMemo(() => {
@@ -88,26 +86,26 @@ function FavoritedNotes() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">Favorited Notes</h2>
-        <p className="text-gray-600">
+      <div className="mb-4 sm:mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">Favorited Notes</h2>
+        <p className="text-sm sm:text-base text-gray-600">
           Course: <span className="font-semibold">{selectedCourse.code} - {selectedCourse.name}</span>
         </p>
       </div>
 
       {/* Search Bar */}
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         <input
           type="text"
-          placeholder="Search favorited notes by title, content, or author..."
+          placeholder="Search favorited notes..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+          className="w-full px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm sm:text-base"
         />
       </div>
 
-          {/* Filtering Controls */}
-          <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* Filtering Controls */}
+      <div className="mb-4 sm:mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Tag:</label>
               <select
@@ -141,13 +139,13 @@ function FavoritedNotes() {
       <div className="space-y-4">
         {filteredNotes.length === 0 ? (
           <div className="text-center py-12 bg-gray-50 rounded-lg">
-            <p className="text-gray-500 text-lg">
+            <p className="text-base sm:text-lg text-gray-500">
               {favoritedNoteIds.length === 0
                 ? "You haven't favorited any notes yet."
                 : "No favorited notes found matching your criteria for this course."}
             </p>
             {favoritedNoteIds.length > 0 && (
-              <p className="text-gray-400 mt-2">Try selecting a different course or adjusting your filters.</p>
+              <p className="text-sm text-gray-400 mt-2">Try selecting a different course or adjusting your filters.</p>
             )}
           </div>
         ) : (

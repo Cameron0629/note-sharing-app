@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom'
 
 function BrowseNotes() {
   const { selectedCourse, clearCourse } = useCourse()
-  const { getAllNotes, loading } = useNotes()
+  const { notes, loading } = useNotes()
   const { userData } = useAuth()
   const { courses } = useCourses()
   const navigate = useNavigate()
@@ -24,21 +24,21 @@ function BrowseNotes() {
       const course = courses.find(c => c.id === selectedCourse.id)
       if (!course || course.schoolId !== userData.schoolId) {
         clearCourse()
-        navigate('/course-selection')
+        navigate('/profile#courses')
       }
     }
   }, [selectedCourse, userData?.schoolId, courses, clearCourse, navigate])
 
   if (!userData?.schoolId) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 p-8 flex items-center justify-center">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
-          <div className="text-6xl mb-4">🏫</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">School Selection Required</h2>
-          <p className="text-gray-600 mb-6">Please select a school in your profile settings to view notes.</p>
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 p-4 sm:p-8 flex items-center justify-center">
+        <div className="bg-white rounded-lg shadow-lg p-4 sm:p-8 max-w-md w-full text-center">
+          <div className="text-4xl sm:text-6xl mb-4">🏫</div>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">School Selection Required</h2>
+          <p className="text-sm sm:text-base text-gray-600 mb-6">Please select a school in your profile settings to view notes.</p>
           <button
             onClick={() => navigate('/profile#school')}
-            className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 font-semibold transition-colors"
+            className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 font-semibold transition-colors text-sm sm:text-base"
           >
             Go to School Selection
           </button>
@@ -55,14 +55,14 @@ function BrowseNotes() {
   const course = courses.find(c => c.id === selectedCourse.id)
   if (!course || course.schoolId !== userData.schoolId) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 p-8 flex items-center justify-center">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
-          <div className="text-6xl mb-4">⚠️</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Course Not Available</h2>
-          <p className="text-gray-600 mb-6">This course does not belong to your school. Please select a different course.</p>
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 p-4 sm:p-8 flex items-center justify-center">
+        <div className="bg-white rounded-lg shadow-lg p-4 sm:p-8 max-w-md w-full text-center">
+          <div className="text-4xl sm:text-6xl mb-4">⚠️</div>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">Course Not Available</h2>
+          <p className="text-sm sm:text-base text-gray-600 mb-6">This course does not belong to your school. Please select a different course.</p>
           <button
-            onClick={() => navigate('/course-selection')}
-            className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 font-semibold transition-colors"
+            onClick={() => navigate('/profile#courses')}
+            className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 font-semibold transition-colors text-sm sm:text-base"
           >
             Select Course
           </button>
@@ -71,13 +71,9 @@ function BrowseNotes() {
     )
   }
 
-  // Get all notes from context (already filtered by school)
-  const allNotes = getAllNotes()
-
   // Filter and sort notes
   const filteredNotes = useMemo(() => {
-    // First filter by course, search, and tag
-    let filtered = allNotes.filter((note) => {
+    let filtered = notes.filter((note) => {
       const matchesCourse = note.courseId === selectedCourse.id
       const matchesSearch =
         note.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -105,21 +101,21 @@ function BrowseNotes() {
     })
 
     return sorted
-  }, [allNotes, selectedCourse.id, searchQuery, filterTag, sortBy])
+  }, [notes, selectedCourse.id, searchQuery, filterTag, sortBy])
 
-  // Get all unique tags for filter (from all notes, not just filtered)
+  // Get all unique tags for filter
   const allTags = useMemo(() => {
-    const courseNotes = allNotes.filter(note => note.courseId === selectedCourse.id)
+    const courseNotes = notes.filter(note => note.courseId === selectedCourse.id)
     const tags = courseNotes.flatMap((note) => note.tags || [])
     return ['all', ...new Set(tags)]
-  }, [allNotes, selectedCourse.id])
+  }, [notes, selectedCourse.id])
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 p-8 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 p-4 sm:p-8 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading notes...</p>
+          <p className="text-sm sm:text-base text-gray-600">Loading notes...</p>
         </div>
       </div>
     )
@@ -182,9 +178,9 @@ function BrowseNotes() {
           <div className="space-y-4">
             {filteredNotes.length === 0 ? (
               <div className="text-center py-12 bg-gray-50 rounded-lg">
-                <p className="text-gray-500 text-lg">No notes found matching your criteria.</p>
-                {allNotes.filter(note => note.courseId === selectedCourse.id).length === 0 && (
-                  <p className="text-gray-400 mt-2">Be the first to post a note for this course!</p>
+                <p className="text-base sm:text-lg text-gray-500">No notes found matching your criteria.</p>
+                {notes.filter(note => note.courseId === selectedCourse.id).length === 0 && (
+                  <p className="text-sm text-gray-400 mt-2">Be the first to post a note for this course!</p>
                 )}
               </div>
             ) : (

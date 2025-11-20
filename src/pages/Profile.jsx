@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import SchoolSelection from '../components/profile/SchoolSelection'
 import CourseSelection from '../components/profile/CourseSelection'
@@ -10,7 +10,8 @@ import Leaderboard from '../components/profile/Leaderboard'
 
 function Profile() {
   const location = useLocation()
-  const { currentUser, userData } = useAuth()
+  const navigate = useNavigate()
+  const { currentUser, userData, logout } = useAuth()
   const [activeTab, setActiveTab] = useState(() => {
     // Get tab from URL hash or default to 'courses'
     const hash = location.hash.replace('#', '')
@@ -36,20 +37,37 @@ function Profile() {
     .toUpperCase()
     .slice(0, 2) || 'U'
 
+  const handleLogout = async () => {
+    try {
+      await logout()
+      navigate('/login')
+    } catch (error) {
+      console.error('Failed to logout:', error)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 p-4 sm:p-8">
       <div className="max-w-6xl mx-auto">
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           {/* Profile Header */}
           <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-4 sm:p-8 text-white">
-            <div className="flex items-center">
-              <div className="w-16 h-16 sm:w-24 sm:h-24 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-white text-2xl sm:text-4xl font-bold border-4 border-white">
-                {initials}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="w-16 h-16 sm:w-24 sm:h-24 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-white text-2xl sm:text-4xl font-bold border-4 border-white">
+                  {initials}
+                </div>
+                <div className="ml-4 sm:ml-6">
+                  <h1 className="text-xl sm:text-3xl font-bold truncate">{displayName}</h1>
+                  <p className="text-purple-100 text-sm sm:text-base truncate">{currentUser?.email}</p>
+                </div>
               </div>
-              <div className="ml-4 sm:ml-6">
-                <h1 className="text-xl sm:text-3xl font-bold truncate">{displayName}</h1>
-                <p className="text-purple-100 text-sm sm:text-base truncate">{currentUser?.email}</p>
-              </div>
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 text-red-200 hover:text-red-100 rounded-lg font-semibold transition-all text-sm sm:text-base border-2 border-white border-opacity-50 hover:border-opacity-100 whitespace-nowrap flex items-center justify-center shadow-lg"
+              >
+                Logout
+              </button>
             </div>
           </div>
 
