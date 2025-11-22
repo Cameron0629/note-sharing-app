@@ -1,3 +1,41 @@
+/**
+ * Profile.jsx - User profile page
+ * 
+ * This page displays the user's profile information and provides access to various profile-related features
+ * through a tabbed interface. Users can manage their school, courses, view points, posts, and favorites.
+ * 
+ * Route: /profile (protected route, requires authentication)
+ * Accessed from: Navigation bar "Profile" link, user avatar click
+ * 
+ * URL Hash Navigation:
+ * - /profile#school - Opens School Selection tab
+ * - /profile#courses - Opens Course Selection tab (default)
+ * - /profile#points - Opens Total Points tab
+ * - /profile#posts - Opens My Posts tab
+ * - /profile#favorited - Opens Favorited Notes tab
+ * 
+ * Features:
+ * - Profile header with user avatar, name, email, and bio
+ * - Settings button (links to /settings)
+ * - Logout button
+ * - Tabbed interface with 5 tabs:
+ *   1. School Selection - Select or add schools
+ *   2. Course Selection - Select, add, or favorite courses
+ *   3. Total Points - View points breakdown and ranking
+ *   4. My Posts - View and manage user's posted notes
+ *   5. Favorited Notes - View notes user has favorited
+ * 
+ * Components Used:
+ * - SchoolSelection: Component for school management
+ * - CourseSelection: Component for course management
+ * - TotalPoints: Component displaying user's points
+ * - UserPosts: Component displaying user's posted notes
+ * - FavoritedNotes: Component displaying user's favorited notes
+ * 
+ * Data Sources:
+ * - AuthContext: Provides user data, logout function
+ */
+
 import { useState, useMemo, useCallback } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
@@ -6,24 +44,24 @@ import CourseSelection from '../components/profile/CourseSelection'
 import TotalPoints from '../components/profile/TotalPoints'
 import UserPosts from '../components/profile/UserPosts'
 import FavoritedNotes from '../components/profile/FavoritedNotes'
-import Leaderboard from '../components/profile/Leaderboard'
 
 function Profile() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { currentUser, userData, logout } = useAuth()
+  const { currentUser, userData, logout } = useAuth() // User authentication and data
   const [activeTab, setActiveTab] = useState(() => {
+    // Initialize active tab from URL hash (e.g., /profile#courses)
     const hash = location.hash.replace('#', '')
-    return hash || 'courses'
+    return hash || 'courses' // Default to 'courses' tab
   })
 
+  // Tab configuration - defines all available tabs and their components
   const tabs = useMemo(() => [
     { id: 'school', label: 'School Selection', component: SchoolSelection },
     { id: 'courses', label: 'Course Selection', component: CourseSelection },
     { id: 'points', label: 'Total Points', component: TotalPoints },
     { id: 'posts', label: 'My Posts', component: UserPosts },
-    { id: 'favorited', label: 'Favorited Notes', component: FavoritedNotes },
-    { id: 'leaderboard', label: 'Leaderboard', component: Leaderboard }
+    { id: 'favorited', label: 'Favorited Notes', component: FavoritedNotes }
   ], [])
 
   const ActiveComponent = useMemo(() => 
@@ -63,7 +101,6 @@ function Profile() {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 p-4 sm:p-8">
       <div className="max-w-6xl mx-auto">
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          {/* Profile Header */}
           <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-4 sm:p-8 text-white">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
@@ -122,7 +159,7 @@ function Profile() {
             </div>
           </div>
 
-          {/* Tabs Navigation */}
+          
           <div className="border-b border-gray-200 bg-gray-50 overflow-x-auto">
             <div className="flex min-w-max">
               {tabs.map((tab) => (
@@ -141,7 +178,7 @@ function Profile() {
             </div>
           </div>
 
-          {/* Tab Content */}
+          
           <div className="p-4 sm:p-8">
             <ActiveComponent />
           </div>

@@ -1,3 +1,34 @@
+/**
+ * PostNotes.jsx - Create and post new notes page
+ * 
+ * This page allows users to create and post new notes with optional file attachments.
+ * Users must select a course before posting, and can filter courses by favorites.
+ * 
+ * Route: /post-notes (protected route, requires authentication)
+ * Accessed from: Navigation bar "Post Notes" link
+ * 
+ * Features:
+ * - Course selection dropdown (can filter to show only favorited courses)
+ * - Note title input (required)
+ * - Note description/content textarea (required)
+ * - Tags input (comma-separated, optional)
+ * - File upload (PDF, DOC, DOCX, TXT, JPG, PNG - optional)
+ * - Form validation
+ * - Redirects to browse notes after successful post
+ * 
+ * Requirements:
+ * - User must have selected a school (redirects to profile if not)
+ * - User must select a course before posting
+ * 
+ * Data Sources:
+ * - CoursesContext: Provides courses for selection
+ * - NotesContext: Provides addNote function
+ * - CourseContext: Provides currently selected course
+ * - AuthContext: Provides user data and schoolId
+ * 
+ * Firestore: Creates new document in 'notes' collection
+ */
+
 import { useState, useEffect } from 'react'
 import { useCourse } from '../contexts/CourseContext'
 import { useNotes } from '../contexts/NotesContext'
@@ -6,23 +37,24 @@ import { useCourses } from '../contexts/CoursesContext'
 import { useNavigate } from 'react-router-dom'
 
 function PostNotes() {
-  const { selectedCourse, clearCourse, selectCourse } = useCourse()
-  const { addNote } = useNotes()
-  const { currentUser, userData } = useAuth()
-  const { courses } = useCourses()
+  const { selectedCourse, clearCourse, selectCourse } = useCourse() // Currently selected course
+  const { addNote } = useNotes() // Function to create new note
+  const { currentUser, userData } = useAuth() // Current user and user data
+  const { courses } = useCourses() // All courses from user's school
   const navigate = useNavigate()
+  
+  // Form state
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    tags: '',
-    file: null
+    title: '', // Note title
+    description: '', // Note content/description
+    tags: '', // Comma-separated tags
+    file: null // Uploaded file
   })
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState('')
-  const [filterCourseId, setFilterCourseId] = useState(selectedCourse?.id || '')
-  const [filterFavorited, setFilterFavorited] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false) // Loading state during submission
+  const [error, setError] = useState('') // Error message
+  const [filterCourseId, setFilterCourseId] = useState(selectedCourse?.id || '') // Selected course for posting
+  const [filterFavorited, setFilterFavorited] = useState(false) // Filter to show only favorited courses
 
-  // Clear course if it doesn't belong to user's school
   useEffect(() => {
     if (selectedCourse && userData?.schoolId) {
       const course = courses.find(c => c.id === selectedCourse.id)
@@ -33,14 +65,12 @@ function PostNotes() {
     }
   }, [selectedCourse, userData?.schoolId, courses, clearCourse])
 
-  // Sync filterCourseId with selectedCourse
   useEffect(() => {
     if (selectedCourse?.id) {
       setFilterCourseId(selectedCourse.id)
     }
   }, [selectedCourse?.id])
 
-  // Get filtered courses based on favorite filter
   const availableCourses = courses.filter(c => {
     if (c.schoolId !== userData?.schoolId) return false
     if (filterFavorited) {
@@ -82,7 +112,6 @@ function PostNotes() {
     e.preventDefault()
     setError('')
     
-    // Check if a course is selected
     const courseToUse = selectedCourse || (filterCourseId ? courses.find(c => c.id === filterCourseId) : null)
     if (!courseToUse) {
       setError('Please select a course to post notes')
@@ -100,7 +129,6 @@ function PostNotes() {
         courseId: courseToUse.id
       })
 
-      // Reset form
       setFormData({
         title: '',
         description: '',
@@ -108,7 +136,6 @@ function PostNotes() {
         file: null
       })
       
-      // Navigate to browse notes
       navigate('/browse-notes')
     } catch (err) {
       setError(err.message || 'Failed to post note')
@@ -130,7 +157,6 @@ function PostNotes() {
             </div>
           )}
 
-          {/* Course Selection Filter */}
           <div className="mb-6 space-y-4">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
@@ -169,7 +195,6 @@ function PostNotes() {
                   type="button"
                   onClick={() => {
                     setFilterFavorited(!filterFavorited)
-                    // Clear selection when toggling filter
                     setFilterCourseId('')
                     clearCourse()
                   }}

@@ -8,7 +8,6 @@ export function UsersProvider({ children }) {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // Listen to all users in Firestore
   useEffect(() => {
     setLoading(true)
     const usersRef = collection(db, 'users')
@@ -30,7 +29,6 @@ export function UsersProvider({ children }) {
       },
       (error) => {
         console.error('Error fetching users:', error)
-        // If index error, try without orderBy
         if (error.code === 'failed-precondition') {
           console.warn('Index not found, fetching without orderBy')
           const qNoOrder = query(usersRef)

@@ -10,9 +10,7 @@ export function CoursesProvider({ children }) {
   const [loading, setLoading] = useState(true)
   const { currentUser, userData, loading: authLoading } = useAuth()
 
-  // Listen to courses in Firestore
   useEffect(() => {
-    // Wait for auth to finish loading
     if (authLoading) {
       setLoading(true)
       return

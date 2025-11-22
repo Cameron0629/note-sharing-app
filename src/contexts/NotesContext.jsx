@@ -11,7 +11,6 @@ export function NotesProvider({ children }) {
   const [loading, setLoading] = useState(true)
   const { currentUser, userData } = useAuth()
 
-  // Listen to notes in Firestore, but only for courses in the user's school
   useEffect(() => {
     if (!currentUser || !userData?.schoolId) {
       setNotes([])

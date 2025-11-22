@@ -115,7 +115,7 @@ function FavoritedNotes() {
         </p>
       </div>
 
-      {/* Search Bar */}
+      
       <div className="mb-4 sm:mb-6">
         <input
           type="text"
@@ -126,7 +126,7 @@ function FavoritedNotes() {
         />
       </div>
 
-      {/* Filtering Controls */}
+      
       <div className="mb-4 sm:mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Course:</label>
@@ -178,7 +178,7 @@ function FavoritedNotes() {
             </div>
           </div>
 
-      {/* Notes List */}
+      
       <div className="space-y-4">
         {filteredNotes.length === 0 ? (
           <div className="text-center py-12 bg-gray-50 rounded-lg">

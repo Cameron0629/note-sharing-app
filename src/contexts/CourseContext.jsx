@@ -9,7 +9,6 @@ export function CourseProvider({ children }) {
   const { userData } = useAuth()
   const { courses } = useCourses()
 
-  // Clear selected course when school changes or course is no longer valid
   useEffect(() => {
     if (selectedCourse && userData?.schoolId) {
       const courseExists = courses.some(c => c.id === selectedCourse.id && c.schoolId === userData.schoolId)

@@ -83,7 +83,7 @@ function UserPosts() {
         <span className="text-sm text-gray-500">({myPosts.length})</span>
       </div>
 
-      {/* Search and Filter */}
+      
       <div className="mb-4 sm:mb-6 space-y-4">
         <div>
           <input

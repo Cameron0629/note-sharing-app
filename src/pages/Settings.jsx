@@ -249,7 +249,7 @@ function Settings() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 sm:p-8">
       <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-lg shadow-lg p-4 sm:p-8">
-          {/* Back Button */}
+          
           <button
             onClick={() => navigate('/profile')}
             className="mb-6 flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
@@ -272,7 +272,7 @@ function Settings() {
 
           <h1 className="text-2xl sm:text-4xl font-bold text-gray-800 mb-6">Settings</h1>
 
-          {/* Error/Success Messages */}
+          
           {error && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
               {error}
@@ -284,15 +284,15 @@ function Settings() {
             </div>
           )}
 
-          {/* Account Settings Section */}
+          
           <div className="mb-8">
             <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-4">Account Settings</h2>
             
-            {/* Profile Picture */}
+            
             <div className="mb-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
               <h3 className="text-lg font-semibold text-gray-700 mb-4">Profile Picture</h3>
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-                {/* Profile Picture Preview */}
+                
                 <div className="flex-shrink-0">
                   {profilePicturePreview ? (
                     <img
@@ -314,7 +314,7 @@ function Settings() {
                   )}
                 </div>
 
-                {/* Upload Controls */}
+                
                 <div className="flex-1 space-y-4">
                   <div>
                     <label htmlFor="profilePicture" className="block text-sm font-medium text-gray-700 mb-2">
@@ -355,7 +355,7 @@ function Settings() {
               </div>
             </div>
             
-            {/* Display Name */}
+            
             <div className="mb-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
               <h3 className="text-lg font-semibold text-gray-700 mb-4">Display Name (Username)</h3>
               <form onSubmit={handleUpdateDisplayName} className="space-y-4">
@@ -383,7 +383,7 @@ function Settings() {
               </form>
             </div>
 
-            {/* Bio */}
+            
             <div className="mb-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
               <h3 className="text-lg font-semibold text-gray-700 mb-4">Bio</h3>
               <form onSubmit={handleUpdateBio} className="space-y-4">
@@ -412,7 +412,7 @@ function Settings() {
               </form>
             </div>
 
-            {/* Password Change */}
+            
             <div className="p-6 bg-gray-50 rounded-lg border border-gray-200">
               <h3 className="text-lg font-semibold text-gray-700 mb-4">Change Password</h3>
               <form onSubmit={handleChangePassword} className="space-y-4">
@@ -471,7 +471,7 @@ function Settings() {
             </div>
           </div>
 
-          {/* Admin Controls Section */}
+          
           {isAdmin && (
             <div className="mb-8 pt-8 border-t border-gray-300">
               <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-4">Admin Controls</h2>

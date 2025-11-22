@@ -15,7 +15,6 @@ function SchoolSelection() {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  // Sync selectedSchool with userData changes
   useEffect(() => {
     if (userData?.schoolId) {
       setSelectedSchool(userData.schoolId)
@@ -50,7 +49,6 @@ function SchoolSelection() {
       const newSchool = await addSchool(formData)
       setFormData({ name: '', location: '' })
       setShowAddForm(false)
-      // Auto-select the newly added school
       await handleSchoolSelect(newSchool)
     } catch (err) {
       setError(err.message || 'Failed to add school')
@@ -59,7 +57,6 @@ function SchoolSelection() {
     }
   }
 
-  // Show loading if auth is still loading or schools are loading
   if (authLoading || schoolsLoading) {
     return (
       <div className="text-center py-8">

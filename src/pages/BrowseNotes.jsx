@@ -1,3 +1,35 @@
+/**
+ * BrowseNotes.jsx - Main notes browsing page
+ * 
+ * This is the primary page where users can browse, search, filter, and sort notes.
+ * It displays all notes from the user's school with various filtering and sorting options.
+ * 
+ * Route: /browse-notes (protected route, requires authentication)
+ * Accessed from: Navigation bar "Browse Notes" link, root path redirect
+ * 
+ * Features:
+ * - Search notes by title, content, or author
+ * - Filter notes by course
+ * - Filter notes by tags
+ * - Sort notes by: recent, oldest, title (A-Z), author (A-Z)
+ * - Vote on notes (upvote/downvote)
+ * - Favorite notes
+ * - Delete own notes (or admin can delete any)
+ * - Click notes to view full details
+ * - Shows author information and vote counts
+ * 
+ * Data Sources:
+ * - NotesContext: Provides all notes from user's school
+ * - CoursesContext: Provides courses for filtering
+ * - UsersContext: Provides user data for author display
+ * - CourseContext: Provides currently selected course
+ * - AuthContext: Provides current user for permissions
+ * 
+ * Components Used:
+ * - VoteButtons: Component for upvoting/downvoting notes
+ * - FavoriteButton: Component for favoriting/unfavoriting notes
+ */
+
 import { useState, useMemo, useEffect } from 'react'
 import { useCourse } from '../contexts/CourseContext'
 import { useNotes } from '../contexts/NotesContext'
@@ -9,19 +41,21 @@ import FavoriteButton from '../components/FavoriteButton'
 import { useNavigate } from 'react-router-dom'
 
 function BrowseNotes() {
-  const { selectedCourse, clearCourse, selectCourse } = useCourse()
-  const { notes, loading, deleteNote } = useNotes()
-  const { currentUser, userData } = useAuth()
-  const { courses } = useCourses()
-  const { users } = useUsers()
+  const { selectedCourse, clearCourse, selectCourse } = useCourse() // Currently selected course
+  const { notes, loading, deleteNote } = useNotes() // All notes from user's school
+  const { currentUser, userData } = useAuth() // Current user and user data
+  const { courses } = useCourses() // All courses from user's school
+  const { users } = useUsers() // All users for author information
   const navigate = useNavigate()
-  const [searchQuery, setSearchQuery] = useState('')
-  const [filterTag, setFilterTag] = useState('all')
-  const [filterCourseId, setFilterCourseId] = useState('')
-  const [sortBy, setSortBy] = useState('recent')
-  const [deletingNoteId, setDeletingNoteId] = useState(null)
+  
+  // Filter and search state
+  const [searchQuery, setSearchQuery] = useState('') // Search text input
+  const [filterTag, setFilterTag] = useState('all') // Selected tag filter
+  const [filterCourseId, setFilterCourseId] = useState('') // Selected course filter
+  const [sortBy, setSortBy] = useState('recent') // Sort option (recent, oldest, title, author)
+  const [deletingNoteId, setDeletingNoteId] = useState(null) // ID of note being deleted (for loading state)
 
-  // Initialize filterCourseId with selectedCourse when it changes
+  // Sync filterCourseId with selectedCourse when course is selected
   useEffect(() => {
     if (selectedCourse?.id && filterCourseId === '') {
       setFilterCourseId(selectedCourse.id)
@@ -56,12 +90,16 @@ function BrowseNotes() {
     )
   }
 
-
-  // Filter and sort notes
+  /**
+   * Filter and sort notes based on current filter/sort settings
+   * Filters by: course, search query, and tags
+   * Sorts by: recent, oldest, title, or author
+   */
   const filteredNotes = useMemo(() => {
-    // If filterCourseId is empty string (All Courses selected), use null; if it has a value, use it; otherwise use selectedCourse
+    // Determine which course to filter by (empty string means "all courses")
     const courseIdToFilter = filterCourseId === '' ? null : (filterCourseId || selectedCourse?.id || null)
     
+    // Apply filters
     let filtered = notes.filter((note) => {
       const matchesCourse = !courseIdToFilter || note.courseId === courseIdToFilter
       const matchesSearch =
@@ -73,7 +111,6 @@ function BrowseNotes() {
       return matchesCourse && matchesSearch && matchesTag
     })
 
-    // Then sort
     const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
         case 'recent':
@@ -109,7 +146,6 @@ function BrowseNotes() {
     }
   }
 
-  // Get all unique tags for filter
   const allTags = useMemo(() => {
     const courseIdToFilter = filterCourseId || selectedCourse?.id
     const courseNotes = courseIdToFilter 
@@ -147,7 +183,7 @@ function BrowseNotes() {
             </p>
           </div>
 
-          {/* Search Bar */}
+          
           <div className="mb-6">
             <input
               type="text"
@@ -158,7 +194,7 @@ function BrowseNotes() {
             />
           </div>
 
-          {/* Filtering Controls */}
+          
           <div className="mb-4 sm:mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Course:</label>
@@ -210,7 +246,7 @@ function BrowseNotes() {
             </div>
           </div>
 
-          {/* Notes List */}
+          
           <div className="space-y-4">
             {filteredNotes.length === 0 ? (
               <div className="text-center py-12 bg-gray-50 rounded-lg">

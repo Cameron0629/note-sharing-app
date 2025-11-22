@@ -251,10 +251,10 @@ function CourseSelection() {
             </div>
           )}
 
-          {/* Search and Filter Controls */}
+          
           {hasSchool && courses.length > 0 && (
             <div className="mb-6 space-y-4">
-              {/* Search Bar */}
+              
               <div>
                 <input
                   type="text"
@@ -265,7 +265,7 @@ function CourseSelection() {
                 />
               </div>
 
-              {/* Filter and Sort Controls */}
+              
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Department:</label>

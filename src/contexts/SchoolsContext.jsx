@@ -10,9 +10,7 @@ export function SchoolsProvider({ children }) {
   const [loading, setLoading] = useState(true)
   const { currentUser, loading: authLoading } = useAuth()
 
-  // Listen to schools in Firestore
   useEffect(() => {
-    // Don't set up listener until auth is ready
     if (authLoading) {
       setLoading(true)
       return

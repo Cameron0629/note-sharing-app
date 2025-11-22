@@ -97,7 +97,7 @@ function NoteDetail() {
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 p-4 sm:p-8">
       <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-lg shadow-lg p-4 sm:p-8">
-          {/* Back Button */}
+          
           <button
             onClick={() => navigate('/browse-notes')}
             className="mb-6 flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
@@ -187,7 +187,7 @@ function NoteDetail() {
             </form>
           ) : (
             <>
-              {/* Note Header */}
+              
               <div className="mb-6">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4">
                   <div className="flex-1">
@@ -254,14 +254,14 @@ function NoteDetail() {
                 </div>
               </div>
 
-              {/* Note Content */}
+              
               <div className="mb-6">
                 <div className="prose max-w-none">
                   <p className="text-base sm:text-lg text-gray-700 whitespace-pre-wrap">{note.content}</p>
                 </div>
               </div>
 
-              {/* File Attachment */}
+              
               {note.fileName && (
                 <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <div className="flex items-center gap-2">
@@ -296,7 +296,7 @@ function NoteDetail() {
                 </div>
               )}
 
-              {/* Tags */}
+              
               {note.tags && note.tags.length > 0 && (
                 <div className="mb-6">
                   <div className="flex flex-wrap gap-2">
@@ -312,7 +312,7 @@ function NoteDetail() {
                 </div>
               )}
 
-              {/* Actions */}
+              
               <div className="flex items-center justify-between pt-6 border-t border-gray-200">
                 <div className="flex items-center gap-4">
                   <FavoriteButton noteId={note.id} />
