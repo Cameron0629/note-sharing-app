@@ -5,7 +5,10 @@ import {
   signOut,
   sendEmailVerification,
   onAuthStateChanged,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  updatePassword,
+  reauthenticateWithCredential,
+  EmailAuthProvider
 } from 'firebase/auth'
 import { doc, setDoc, getDoc } from 'firebase/firestore'
 import { auth, db } from '../firebase'
@@ -52,7 +55,8 @@ export function AuthProvider({ children }) {
         schoolId: '',
         favoritedPosts: [],
         favoritedCourses: [],
-        postsCreated: []
+        postsCreated: [],
+        admin: false // Default to false, can be set to true in Firebase Console
       }
 
       await setDoc(doc(db, 'users', user.uid), userDoc)
@@ -128,6 +132,26 @@ export function AuthProvider({ children }) {
     }
   }, [getUserData])
 
+  // Update password
+  const changePassword = useCallback(async (currentPassword, newPassword) => {
+    if (!currentUser) {
+      throw new Error('User must be authenticated to change password')
+    }
+
+    try {
+      setError(null)
+      // Re-authenticate user with current password
+      const credential = EmailAuthProvider.credential(currentUser.email, currentPassword)
+      await reauthenticateWithCredential(currentUser, credential)
+      // Update password
+      await updatePassword(currentUser, newPassword)
+      return true
+    } catch (err) {
+      setError(err.message)
+      throw err
+    }
+  }, [currentUser])
+
   // Monitor auth state and load user data
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -161,9 +185,10 @@ export function AuthProvider({ children }) {
     resetPassword,
     getUserData,
     updateUserData,
+    changePassword,
     error,
     loading
-  }), [currentUser, userData, signup, login, logout, resendVerificationEmail, resetPassword, getUserData, updateUserData, error, loading])
+  }), [currentUser, userData, signup, login, logout, resendVerificationEmail, resetPassword, getUserData, updateUserData, changePassword, error, loading])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

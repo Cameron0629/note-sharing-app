@@ -16,6 +16,7 @@ import BrowseNotes from './pages/BrowseNotes'
 import PostNotes from './pages/PostNotes'
 import Profile from './pages/Profile'
 import NoteDetail from './pages/NoteDetail'
+import Settings from './pages/Settings'
 
 function App() {
   return (
@@ -82,6 +83,14 @@ function App() {
                         element={
                           <ProtectedRoute>
                             <NoteDetail />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/settings"
+                        element={
+                          <ProtectedRoute>
+                            <Settings />
                           </ProtectedRoute>
                         }
                       />

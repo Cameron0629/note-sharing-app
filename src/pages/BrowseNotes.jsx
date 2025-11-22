@@ -222,6 +222,7 @@ function BrowseNotes() {
             ) : (
               filteredNotes.map((note) => {
                 const isOwner = currentUser && note.authorId === currentUser.uid
+                const isAdmin = userData?.admin === true
                 return (
                 <div
                   key={note.id}
@@ -231,14 +232,16 @@ function BrowseNotes() {
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2 gap-2">
                     <div className="flex-1 flex items-start justify-between gap-2">
                       <h2 className="text-lg sm:text-xl font-semibold text-gray-800 flex-1">{note.title}</h2>
-                      {isOwner && (
+                      {(isOwner || isAdmin) && (
                         <button
                           onClick={(e) => handleDeleteNote(note.id, e)}
                           disabled={deletingNoteId === note.id}
                           className="px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 font-semibold transition-colors text-xs sm:text-sm disabled:opacity-50 flex-shrink-0"
-                          title="Delete note"
+                          title={isAdmin && !isOwner ? "Delete (Admin)" : "Delete note"}
                         >
-                          {deletingNoteId === note.id ? 'Deleting...' : 'Delete'}
+                          {deletingNoteId === note.id 
+                            ? 'Deleting...' 
+                            : (isAdmin && !isOwner ? 'Admin Delete' : 'Delete')}
                         </button>
                       )}
                     </div>

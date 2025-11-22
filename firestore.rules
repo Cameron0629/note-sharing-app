@@ -53,9 +53,16 @@ service cloud.firestore {
       allow read: if request.auth != null;
       // Anyone authenticated can create notes
       allow create: if request.auth != null;
-      // Author can delete their own notes
+      
+      // Helper function to check if user is admin
+      function isAdmin() {
+        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.admin == true;
+      }
+      
+      // Author can delete their own notes, OR admin can delete any note
       allow delete: if request.auth != null 
-                    && request.auth.uid == resource.data.authorId;
+                    && (request.auth.uid == resource.data.authorId || isAdmin());
+      
       // Author can update their own notes (any field)
       allow update: if request.auth != null 
                     && request.auth.uid == resource.data.authorId;

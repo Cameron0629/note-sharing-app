@@ -182,22 +182,31 @@ export function NotesProvider({ children }) {
     }
 
     try {
-      // Get the note first to check if it has a file
+      // Get the note first to check if user is author or admin
       const noteRef = doc(db, 'notes', noteId)
       const noteSnap = await getDoc(noteRef)
       
-      if (noteSnap.exists()) {
-        const noteData = noteSnap.data()
-        
-        // Delete file from Storage if it exists
-        if (noteData.storagePath) {
-          try {
-            const fileRef = ref(storage, noteData.storagePath)
-            await deleteObject(fileRef)
-          } catch (storageError) {
-            console.error('Error deleting file from storage:', storageError)
-            // Continue with note deletion even if file deletion fails
-          }
+      if (!noteSnap.exists()) {
+        throw new Error('Note not found')
+      }
+
+      const noteData = noteSnap.data()
+      const isAdmin = userData?.admin === true
+      const isAuthor = noteData.authorId === currentUser.uid
+
+      // Only allow deletion if user is the author OR an admin
+      if (!isAuthor && !isAdmin) {
+        throw new Error('You do not have permission to delete this note')
+      }
+      
+      // Delete file from Storage if it exists
+      if (noteData.storagePath) {
+        try {
+          const fileRef = ref(storage, noteData.storagePath)
+          await deleteObject(fileRef)
+        } catch (storageError) {
+          console.error('Error deleting file from storage:', storageError)
+          // Continue with note deletion even if file deletion fails
         }
       }
       
@@ -207,7 +216,7 @@ export function NotesProvider({ children }) {
       console.error('Error deleting note:', error)
       throw error
     }
-  }, [currentUser])
+  }, [currentUser, userData])
 
   return (
     <NotesContext.Provider

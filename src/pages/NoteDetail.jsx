@@ -10,7 +10,7 @@ function NoteDetail() {
   const { noteId } = useParams()
   const navigate = useNavigate()
   const { notes, updateNote, deleteNote } = useNotes()
-  const { currentUser } = useAuth()
+  const { currentUser, userData } = useAuth()
   const { courses } = useCourses()
   const [isEditing, setIsEditing] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -24,6 +24,7 @@ function NoteDetail() {
 
   const note = notes.find(n => n.id === noteId)
   const isOwner = note && currentUser && note.authorId === currentUser.uid
+  const isAdmin = userData?.admin === true
   const course = note ? courses.find(c => c.id === note.courseId) : null
 
   useEffect(() => {
@@ -197,20 +198,25 @@ function NoteDetail() {
                       <span>{note.date || note.createdAt?.split('T')[0]}</span>
                     </div>
                   </div>
-                  {isOwner && (
+                  {(isOwner || isAdmin) && (
                     <div className="flex gap-2">
-                      <button
-                        onClick={() => setIsEditing(true)}
-                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-semibold transition-colors text-sm"
-                      >
-                        Edit
-                      </button>
+                      {isOwner && (
+                        <button
+                          onClick={() => setIsEditing(true)}
+                          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-semibold transition-colors text-sm"
+                        >
+                          Edit
+                        </button>
+                      )}
                       <button
                         onClick={handleDelete}
                         disabled={isDeleting}
                         className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-semibold transition-colors text-sm disabled:opacity-50"
+                        title={isAdmin && !isOwner ? "Delete (Admin)" : "Delete note"}
                       >
-                        {isDeleting ? 'Deleting...' : 'Delete'}
+                        {isDeleting 
+                          ? 'Deleting...' 
+                          : (isAdmin && !isOwner ? 'Admin Delete' : 'Delete')}
                       </button>
                     </div>
                   )}
