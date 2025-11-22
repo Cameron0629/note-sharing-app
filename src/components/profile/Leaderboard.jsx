@@ -1,39 +1,21 @@
 import { useMemo } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
-import { useNotes } from '../../contexts/NotesContext'
+import { useUsers } from '../../contexts/UsersContext'
 
 function Leaderboard() {
   const { currentUser } = useAuth()
-  const { notes } = useNotes()
+  const { users, loading } = useUsers()
 
   const leaderboard = useMemo(() => {
-    const userVoteCounts = {}
-    
-    notes.forEach(note => {
-      if (!note.votes) return
-
-      const votes = Object.values(note.votes)
-      const upvotes = votes.filter(v => v === 'upvote').length
-      const downvotes = votes.filter(v => v === 'downvote').length
-      const points = upvotes - downvotes
-
-      if (!userVoteCounts[note.authorId]) {
-        userVoteCounts[note.authorId] = {
-          userId: note.authorId,
-          authorName: note.author,
-          totalPoints: 0
-        }
-      }
-      userVoteCounts[note.authorId].totalPoints += points
-    })
-
-    return Object.values(userVoteCounts)
+    return users
+      .filter(user => (user.totalPoints || 0) > 0 || user.uid === currentUser?.uid)
       .map(user => ({
-        ...user,
-        totalPoints: Math.max(0, user.totalPoints)
+        userId: user.uid,
+        authorName: user.displayName || user.email?.split('@')[0] || 'Anonymous',
+        totalPoints: Math.max(0, user.totalPoints || 0)
       }))
       .sort((a, b) => b.totalPoints - a.totalPoints)
-  }, [notes])
+  }, [users, currentUser?.uid])
 
   const getRankIcon = (rank) => {
     if (rank === 1) return '🥇'
@@ -49,7 +31,12 @@ function Leaderboard() {
         Top contributors ranked by total points (upvotes - downvotes on their posts)
       </p>
 
-      {leaderboard.length === 0 ? (
+      {loading ? (
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading leaderboard...</p>
+        </div>
+      ) : leaderboard.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg">
           <p className="text-base sm:text-lg text-gray-500 mb-2">No points yet.</p>
           <p className="text-sm text-gray-400">Start posting and getting upvotes to appear on the leaderboard!</p>
@@ -107,7 +94,7 @@ function Leaderboard() {
               <li>• Each upvote on your post = +1 point</li>
               <li>• Each downvote on your post = -1 point</li>
               <li>• Total points = Sum of (upvotes - downvotes) on all your posts</li>
-              <li>• Points are calculated in real-time from votes</li>
+              <li>• Points are updated in real-time when users vote on your posts</li>
             </ul>
           </div>
         </div>

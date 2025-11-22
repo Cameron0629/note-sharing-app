@@ -1,5 +1,5 @@
 import { createContext, useContext, useCallback } from 'react'
-import { doc, updateDoc, getDoc } from 'firebase/firestore'
+import { doc, updateDoc, getDoc, increment, runTransaction } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from './AuthContext'
 import { useNotes } from './NotesContext'
@@ -36,35 +36,96 @@ export function VotingProvider({ children }) {
     return note.votes[currentUser.uid] || null
   }, [notes, currentUser])
 
-  // Vote on a note
+  // Vote on a note - updates both note document and author's totalPoints
   const vote = useCallback(async (itemId, authorId, courseId, voteType) => {
     if (!currentUser) {
       throw new Error('User must be authenticated to vote')
     }
 
+    // Prevent users from voting on their own posts
+    if (currentUser.uid === authorId) {
+      throw new Error('You cannot vote on your own post')
+    }
+
+    const noteId = itemId.replace('note-', '')
+    const noteRef = doc(db, 'notes', noteId)
+    const authorRef = doc(db, 'users', authorId)
+
     try {
-      const noteId = itemId.replace('note-', '')
-      const noteRef = doc(db, 'notes', noteId)
-      
-      const noteSnap = await getDoc(noteRef)
-      if (!noteSnap.exists()) {
-        throw new Error('Note not found')
-      }
+      // Use a transaction to ensure atomicity
+      await runTransaction(db, async (transaction) => {
+        // Read ALL documents first (required by Firestore transactions)
+        const noteSnap = await transaction.get(noteRef)
+        if (!noteSnap.exists()) {
+          throw new Error('Note not found')
+        }
 
-      const currentVotes = noteSnap.data().votes || {}
-      const currentVote = currentVotes[currentUser.uid]
+        const authorSnap = await transaction.get(authorRef)
+        const currentPoints = authorSnap.exists() ? (authorSnap.data().totalPoints || 0) : 0
 
-      const updatedVotes = { ...currentVotes }
+        const noteData = noteSnap.data()
+        // Ensure votes is an object
+        const currentVotes = (noteData.votes && typeof noteData.votes === 'object' && !Array.isArray(noteData.votes)) 
+          ? { ...noteData.votes } 
+          : {}
+        const currentVote = currentVotes[currentUser.uid]
 
-      if (currentVote === voteType) {
-        delete updatedVotes[currentUser.uid]
-      } else {
-        updatedVotes[currentUser.uid] = voteType
-      }
+        console.log('Voting (transaction):', { 
+          noteId, 
+          voteType, 
+          currentVote, 
+          currentVotesKeys: Object.keys(currentVotes),
+          allVotes: currentVotes
+        })
 
-      await updateDoc(noteRef, {
-        votes: updatedVotes
+        // Calculate point change
+        let pointChange = 0
+        const updatedVotes = { ...currentVotes }
+
+        if (currentVote === voteType) {
+          // Removing vote (toggle off) - user clicked the same vote button again
+          delete updatedVotes[currentUser.uid]
+          if (voteType === 'upvote') {
+            pointChange = -1 // Remove upvote = -1 point
+          } else {
+            pointChange = 1 // Remove downvote = +1 point (undo the -1)
+          }
+          console.log('Removing vote, pointChange:', pointChange)
+        } else if (currentVote) {
+          // Changing vote (upvote to downvote or vice versa)
+          updatedVotes[currentUser.uid] = voteType
+          if (currentVote === 'upvote' && voteType === 'downvote') {
+            pointChange = -2 // Was +1, now -1, so net -2
+          } else if (currentVote === 'downvote' && voteType === 'upvote') {
+            pointChange = 2 // Was -1, now +1, so net +2
+          }
+          console.log('Changing vote, pointChange:', pointChange)
+        } else {
+          // New vote - this is the case we want for first-time upvote
+          updatedVotes[currentUser.uid] = voteType
+          if (voteType === 'upvote') {
+            pointChange = 1 // New upvote = +1 point
+          } else {
+            pointChange = -1 // New downvote = -1 point
+          }
+          console.log('New vote, pointChange:', pointChange, 'updatedVotes:', updatedVotes)
+        }
+
+        // Now do ALL writes (after all reads are complete)
+        transaction.update(noteRef, {
+          votes: updatedVotes
+        })
+
+        // Update author's totalPoints in transaction
+        if (pointChange !== 0) {
+          transaction.update(authorRef, {
+            totalPoints: currentPoints + pointChange
+          })
+          console.log('Author points will be updated from', currentPoints, 'to', currentPoints + pointChange)
+        }
       })
+
+      console.log('Transaction completed successfully')
     } catch (error) {
       console.error('Error voting:', error)
       throw error

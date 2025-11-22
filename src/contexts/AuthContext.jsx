@@ -51,6 +51,7 @@ export function AuthProvider({ children }) {
         totalPoints: 0,
         schoolId: '',
         favoritedPosts: [],
+        favoritedCourses: [],
         postsCreated: []
       }
 

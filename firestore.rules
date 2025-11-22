@@ -16,6 +16,13 @@ service cloud.firestore {
                     && request.auth.uid == userId
                     && request.resource.data.uid == userId;
       
+      // Allow authenticated users to update other users' totalPoints only (for voting system)
+      // This allows users to increment/decrement points when voting on posts
+      allow update: if request.auth != null 
+                    && request.auth.uid != userId
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['totalPoints'])
+                    && request.resource.data.totalPoints is int;
+      
       // Allow authenticated users to read other users' displayName and totalPoints (for leaderboard)
       allow read: if request.auth != null;
     }
@@ -46,9 +53,16 @@ service cloud.firestore {
       allow read: if request.auth != null;
       // Anyone authenticated can create notes
       allow create: if request.auth != null;
-      // Only author can update/delete their own notes
-      allow update, delete: if request.auth != null 
-                            && request.auth.uid == resource.data.authorId;
+      // Author can delete their own notes
+      allow delete: if request.auth != null 
+                    && request.auth.uid == resource.data.authorId;
+      // Author can update their own notes (any field)
+      allow update: if request.auth != null 
+                    && request.auth.uid == resource.data.authorId;
+      // Allow authenticated users to update votes field on any note (for voting system)
+      allow update: if request.auth != null 
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['votes'])
+                    && request.resource.data.votes is map;
     }
     
     // Votes collection

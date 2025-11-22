@@ -3,6 +3,7 @@ import { useCourse } from '../../contexts/CourseContext'
 import { useCourses } from '../../contexts/CoursesContext'
 import { useAuth } from '../../contexts/AuthContext'
 import { useSchools } from '../../contexts/SchoolsContext'
+import FavoriteCourseButton from '../FavoriteCourseButton'
 
 function CourseSelection() {
   const { selectedCourse, selectCourse } = useCourse()
@@ -21,6 +22,7 @@ function CourseSelection() {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterDepartment, setFilterDepartment] = useState('all')
   const [filterProfessor, setFilterProfessor] = useState('all')
+  const [filterFavorited, setFilterFavorited] = useState(false)
   const [sortBy, setSortBy] = useState('code')
 
   const hasSchool = userData?.schoolId && userData.schoolId !== ''
@@ -43,6 +45,8 @@ function CourseSelection() {
 
   // Filter and sort courses
   const filteredCourses = useMemo(() => {
+    const favoritedCourseIds = userData?.favoritedCourses || []
+    
     let filtered = courses.filter((course) => {
       // Search filter
       const matchesSearch = !searchQuery || 
@@ -59,7 +63,10 @@ function CourseSelection() {
       const matchesProfessor = filterProfessor === 'all' || 
         course.professor === filterProfessor
 
-      return matchesSearch && matchesDepartment && matchesProfessor
+      // Favorited filter
+      const matchesFavorited = !filterFavorited || favoritedCourseIds.includes(course.id)
+
+      return matchesSearch && matchesDepartment && matchesProfessor && matchesFavorited
     })
 
     // Sort courses
@@ -79,7 +86,7 @@ function CourseSelection() {
     })
 
     return sorted
-  }, [courses, searchQuery, filterDepartment, filterProfessor, sortBy])
+  }, [courses, searchQuery, filterDepartment, filterProfessor, filterFavorited, userData?.favoritedCourses, sortBy])
 
 
   const handleAddCourse = async (e) => {
@@ -256,7 +263,7 @@ function CourseSelection() {
           </div>
 
           {/* Filter and Sort Controls */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Department:</label>
               <select
@@ -284,6 +291,19 @@ function CourseSelection() {
                   </option>
                 ))}
               </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Show Favorited Only:</label>
+              <button
+                onClick={() => setFilterFavorited(!filterFavorited)}
+                className={`w-full px-4 py-2 sm:py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base transition-colors ${
+                  filterFavorited
+                    ? 'bg-red-50 border-red-300 text-red-700 hover:bg-red-100'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {filterFavorited ? '✓ Favorited Only' : 'Show All'}
+              </button>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Sort By:</label>
@@ -320,6 +340,7 @@ function CourseSelection() {
               setSearchQuery('')
               setFilterDepartment('all')
               setFilterProfessor('all')
+              setFilterFavorited(false)
             }}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-semibold transition-colors text-sm"
           >
@@ -329,10 +350,10 @@ function CourseSelection() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredCourses.map((course) => (
-                <button
+                <div
                   key={course.id}
                   onClick={() => selectCourse(course)}
-                  className={`p-6 rounded-lg border-2 text-left transition-all hover:shadow-lg ${
+                  className={`p-6 rounded-lg border-2 text-left transition-all hover:shadow-lg cursor-pointer ${
                 selectedCourse?.id === course.id
                   ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-200 bg-white hover:border-blue-300'
@@ -340,9 +361,14 @@ function CourseSelection() {
             >
               <div className="flex items-start justify-between mb-2">
                 <h3 className="text-xl font-semibold text-gray-800">{course.code}</h3>
-                {selectedCourse?.id === course.id && (
-                  <span className="text-blue-500 text-xl">✓</span>
-                )}
+                <div className="flex items-center gap-2">
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <FavoriteCourseButton courseId={course.id} />
+                  </div>
+                  {selectedCourse?.id === course.id && (
+                    <span className="text-blue-500 text-xl">✓</span>
+                  )}
+                </div>
               </div>
               <p className="text-gray-700 font-medium mb-1">{course.name}</p>
               {course.department && (
@@ -351,7 +377,7 @@ function CourseSelection() {
               {course.professor && (
                 <p className="text-sm text-gray-600 font-medium">👤 {course.professor}</p>
               )}
-            </button>
+            </div>
           ))}
         </div>
       )}

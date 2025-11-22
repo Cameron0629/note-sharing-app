@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { collection, query, where, orderBy, addDoc, onSnapshot } from 'firebase/firestore'
-import { db } from '../firebase'
+import { collection, query, where, orderBy, addDoc, onSnapshot, doc, deleteDoc, updateDoc, getDoc } from 'firebase/firestore'
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
+import { db, storage } from '../firebase'
 import { useAuth } from './AuthContext'
 
 const NotesContext = createContext()
@@ -33,9 +34,16 @@ export function NotesProvider({ children }) {
       // Use a Map to prevent duplicates
       const notesMap = new Map()
       snapshot.docs.forEach(doc => {
+        const data = doc.data()
+        // Ensure votes field always exists and is preserved correctly
+        // If votes exists and is an object, use it; otherwise use empty object
+        const votes = (data.votes && typeof data.votes === 'object' && !Array.isArray(data.votes)) 
+          ? data.votes 
+          : {}
         notesMap.set(doc.id, {
           id: doc.id,
-          ...doc.data()
+          ...data,
+          votes: votes
         })
       })
       const notesData = Array.from(notesMap.values())
@@ -58,9 +66,15 @@ export function NotesProvider({ children }) {
           unsubscribe = onSnapshot(qNoOrder, (snapshot) => {
             const notesMap = new Map()
             snapshot.docs.forEach(doc => {
+              const data = doc.data()
+              // Ensure votes field always exists and is preserved correctly
+              const votes = (data.votes && typeof data.votes === 'object' && !Array.isArray(data.votes)) 
+                ? data.votes 
+                : {}
               notesMap.set(doc.id, {
                 id: doc.id,
-                ...doc.data()
+                ...data,
+                votes: votes
               })
             })
             const notesData = Array.from(notesMap.values())
@@ -100,6 +114,17 @@ export function NotesProvider({ children }) {
     }
 
     try {
+      let fileUrl = null
+      let storagePath = null
+      
+      // Upload file to Firebase Storage if provided
+      if (noteData.file) {
+        storagePath = `notes/${currentUser.uid}/${Date.now()}_${noteData.file.name}`
+        const fileRef = ref(storage, storagePath)
+        await uploadBytes(fileRef, noteData.file)
+        fileUrl = await getDownloadURL(fileRef)
+      }
+
       const noteDoc = {
         title: noteData.title,
         content: noteData.description || noteData.content,
@@ -111,7 +136,8 @@ export function NotesProvider({ children }) {
         createdAt: new Date().toISOString(),
         date: new Date().toISOString().split('T')[0],
         fileName: noteData.file ? noteData.file.name : null,
-        fileUrl: null, // Will be set if file is uploaded to Storage
+        fileUrl: fileUrl, // Store the download URL
+        storagePath: storagePath, // Store the storage path for deletion
         votes: {} // Initialize votes field as empty object
       }
 
@@ -127,12 +153,70 @@ export function NotesProvider({ children }) {
     }
   }, [currentUser, userData])
 
+  // Update an existing note
+  const updateNote = useCallback(async (noteId, noteData) => {
+    if (!currentUser) {
+      throw new Error('User must be authenticated to update notes')
+    }
+
+    try {
+      const noteRef = doc(db, 'notes', noteId)
+      const updateData = {
+        title: noteData.title,
+        content: noteData.content || noteData.description,
+        tags: noteData.tags ? (Array.isArray(noteData.tags) ? noteData.tags : noteData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)) : [],
+        updatedAt: new Date().toISOString()
+      }
+
+      await updateDoc(noteRef, updateData)
+    } catch (error) {
+      console.error('Error updating note:', error)
+      throw error
+    }
+  }, [currentUser])
+
+  // Delete a note
+  const deleteNote = useCallback(async (noteId) => {
+    if (!currentUser) {
+      throw new Error('User must be authenticated to delete notes')
+    }
+
+    try {
+      // Get the note first to check if it has a file
+      const noteRef = doc(db, 'notes', noteId)
+      const noteSnap = await getDoc(noteRef)
+      
+      if (noteSnap.exists()) {
+        const noteData = noteSnap.data()
+        
+        // Delete file from Storage if it exists
+        if (noteData.storagePath) {
+          try {
+            const fileRef = ref(storage, noteData.storagePath)
+            await deleteObject(fileRef)
+          } catch (storageError) {
+            console.error('Error deleting file from storage:', storageError)
+            // Continue with note deletion even if file deletion fails
+          }
+        }
+      }
+      
+      // Delete the note document
+      await deleteDoc(noteRef)
+    } catch (error) {
+      console.error('Error deleting note:', error)
+      throw error
+    }
+  }, [currentUser])
+
   return (
     <NotesContext.Provider
       value={{
         notes,
         loading,
-        addNote
+        addNote,
+        updateNote,
+        deleteNote
       }}
     >
       {children}

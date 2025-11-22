@@ -1,29 +1,37 @@
+import { useState } from 'react'
 import { useVoting } from '../contexts/VotingContext'
 import { useAuth } from '../contexts/AuthContext'
 
 function VoteButtons({ itemId, authorId, courseId }) {
   const { vote, getVoteCount, getUserVote } = useVoting()
   const { currentUser } = useAuth()
+  const [voting, setVoting] = useState(false)
   const noteId = itemId.replace('note-', '')
   const voteCount = getVoteCount(noteId)
   const userVote = getUserVote(itemId)
-  const isDisabled = !currentUser || currentUser.uid === authorId
+  const isDisabled = !currentUser || currentUser.uid === authorId || voting
 
   const handleUpvote = async () => {
     if (isDisabled) return
+    setVoting(true)
     try {
       await vote(itemId, authorId, courseId, 'upvote')
     } catch (error) {
       console.error('Error upvoting:', error)
+    } finally {
+      setVoting(false)
     }
   }
 
   const handleDownvote = async () => {
     if (isDisabled) return
+    setVoting(true)
     try {
       await vote(itemId, authorId, courseId, 'downvote')
     } catch (error) {
       console.error('Error downvoting:', error)
+    } finally {
+      setVoting(false)
     }
   }
 

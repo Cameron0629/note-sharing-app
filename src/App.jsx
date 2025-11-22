@@ -5,6 +5,7 @@ import { CoursesProvider } from './contexts/CoursesContext'
 import { SchoolsProvider } from './contexts/SchoolsContext'
 import { VotingProvider } from './contexts/VotingContext'
 import { NotesProvider } from './contexts/NotesContext'
+import { UsersProvider } from './contexts/UsersContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Navigation from './components/Navigation'
 import Login from './pages/Login'
@@ -14,6 +15,7 @@ import ForgotPassword from './pages/ForgotPassword'
 import BrowseNotes from './pages/BrowseNotes'
 import PostNotes from './pages/PostNotes'
 import Profile from './pages/Profile'
+import NoteDetail from './pages/NoteDetail'
 
 function App() {
   return (
@@ -22,7 +24,8 @@ function App() {
         <CoursesProvider>
           <NotesProvider>
             <VotingProvider>
-              <CourseProvider>
+              <UsersProvider>
+                <CourseProvider>
                 <BrowserRouter>
                   <div className="min-h-screen bg-gray-50">
                     <Navigation />
@@ -74,15 +77,24 @@ function App() {
                           </ProtectedRoute>
                         }
                       />
+                      <Route
+                        path="/note/:noteId"
+                        element={
+                          <ProtectedRoute>
+                            <NoteDetail />
+                          </ProtectedRoute>
+                        }
+                      />
                     </Routes>
                   </div>
                 </BrowserRouter>
               </CourseProvider>
-            </VotingProvider>
-          </NotesProvider>
-        </CoursesProvider>
-      </SchoolsProvider>
-    </AuthProvider>
+            </UsersProvider>
+          </VotingProvider>
+        </NotesProvider>
+      </CoursesProvider>
+    </SchoolsProvider>
+  </AuthProvider>
   )
 }
 
