@@ -3,6 +3,7 @@ import { useCourse } from '../contexts/CourseContext'
 import { useNotes } from '../contexts/NotesContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useCourses } from '../contexts/CoursesContext'
+import { useUsers } from '../contexts/UsersContext'
 import VoteButtons from '../components/VoteButtons'
 import FavoriteButton from '../components/FavoriteButton'
 import { useNavigate } from 'react-router-dom'
@@ -12,6 +13,7 @@ function BrowseNotes() {
   const { notes, loading, deleteNote } = useNotes()
   const { currentUser, userData } = useAuth()
   const { courses } = useCourses()
+  const { users } = useUsers()
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
   const [filterTag, setFilterTag] = useState('all')
@@ -298,7 +300,36 @@ function BrowseNotes() {
                       ))}
                     </div>
                     <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-                      <span className="text-xs sm:text-sm text-gray-500">By {note.author}</span>
+                      <div className="flex items-center gap-2">
+                        {(() => {
+                          const authorUser = users.find(u => u.uid === note.authorId)
+                          const authorProfilePicture = authorUser?.profilePictureUrl
+                          const authorName = note.author || 'Anonymous'
+                          const authorInitials = authorName
+                            .split(' ')
+                            .map(n => n[0])
+                            .join('')
+                            .toUpperCase()
+                            .slice(0, 2) || 'A'
+                          
+                          return (
+                            <>
+                              {authorProfilePicture ? (
+                                <img
+                                  src={authorProfilePicture}
+                                  alt={authorName}
+                                  className="w-5 h-5 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center">
+                                  <span className="text-xs font-semibold text-gray-600">{authorInitials}</span>
+                                </div>
+                              )}
+                              <span className="text-xs sm:text-sm text-gray-500">By {authorName}</span>
+                            </>
+                          )
+                        })()}
+                      </div>
                       <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                         <FavoriteButton noteId={note.id} />
                         <VoteButtons

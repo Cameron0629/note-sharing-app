@@ -15,7 +15,7 @@ function VerifyEmail() {
     // Check if user is verified
     if (currentUser) {
       if (currentUser.emailVerified) {
-        navigate('/browse-notes')
+        navigate('/profile')
       } else {
         setChecking(false)
       }
@@ -69,7 +69,7 @@ function VerifyEmail() {
       if (currentUser.emailVerified) {
         setMessage('Email verified! Redirecting...')
         setTimeout(() => {
-          navigate('/browse-notes')
+          navigate('/profile')
         }, 1500)
       } else {
         setError('Email not verified yet. Please check your inbox and click the verification link.')

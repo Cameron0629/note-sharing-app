@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useNotes } from '../contexts/NotesContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useCourses } from '../contexts/CoursesContext'
+import { useUsers } from '../contexts/UsersContext'
 import VoteButtons from '../components/VoteButtons'
 import FavoriteButton from '../components/FavoriteButton'
 
@@ -12,6 +13,7 @@ function NoteDetail() {
   const { notes, updateNote, deleteNote } = useNotes()
   const { currentUser, userData } = useAuth()
   const { courses } = useCourses()
+  const { users } = useUsers()
   const [isEditing, setIsEditing] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [editData, setEditData] = useState({
@@ -194,7 +196,36 @@ function NoteDetail() {
                       {course && (
                         <span className="font-semibold text-green-600">{course.code} - {course.name}</span>
                       )}
-                      <span>By {note.author}</span>
+                      <div className="flex items-center gap-2">
+                        {(() => {
+                          const authorUser = users.find(u => u.uid === note.authorId)
+                          const authorProfilePicture = authorUser?.profilePictureUrl
+                          const authorName = note.author || 'Anonymous'
+                          const authorInitials = authorName
+                            .split(' ')
+                            .map(n => n[0])
+                            .join('')
+                            .toUpperCase()
+                            .slice(0, 2) || 'A'
+                          
+                          return (
+                            <>
+                              {authorProfilePicture ? (
+                                <img
+                                  src={authorProfilePicture}
+                                  alt={authorName}
+                                  className="w-6 h-6 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center">
+                                  <span className="text-xs font-semibold text-gray-600">{authorInitials}</span>
+                                </div>
+                              )}
+                              <span>By {authorName}</span>
+                            </>
+                          )
+                        })()}
+                      </div>
                       <span>{note.date || note.createdAt?.split('T')[0]}</span>
                     </div>
                   </div>

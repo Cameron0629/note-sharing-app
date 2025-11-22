@@ -56,6 +56,8 @@ export function AuthProvider({ children }) {
         favoritedPosts: [],
         favoritedCourses: [],
         postsCreated: [],
+        profilePictureUrl: '',
+        profilePictureStoragePath: '',
         admin: false // Default to false, can be set to true in Firebase Console
       }
 

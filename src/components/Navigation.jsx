@@ -39,6 +39,7 @@ function Navigation() {
     .join('')
     .toUpperCase()
     .slice(0, 2) || 'U'
+  const profilePictureUrl = userData?.profilePictureUrl || null
 
   const navLinks = [
     { path: '/browse-notes', label: 'Browse Notes', icon: '📚' },
@@ -94,10 +95,18 @@ function Navigation() {
               {/* User Avatar/Initials */}
               <Link
                 to="/profile"
-                className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-semibold text-sm hover:bg-blue-200 transition-colors"
+                className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-semibold text-sm hover:bg-blue-200 transition-colors overflow-hidden"
                 title={displayName}
               >
-                {initials}
+                {profilePictureUrl ? (
+                  <img
+                    src={profilePictureUrl}
+                    alt={displayName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  initials
+                )}
               </Link>
 
               {/* Mobile Menu Button */}
@@ -166,9 +175,17 @@ function Navigation() {
             <div className="px-4 py-3 border-t border-gray-200">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-semibold text-sm flex items-center justify-center">
-                    {initials}
-                  </div>
+                  {profilePictureUrl ? (
+                    <img
+                      src={profilePictureUrl}
+                      alt={displayName}
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-semibold text-sm flex items-center justify-center">
+                      {initials}
+                    </div>
+                  )}
                   <span className="text-sm font-medium text-gray-700">{displayName}</span>
                 </div>
               </div>

@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
+import { storage } from '../firebase'
 
 function Settings() {
   const navigate = useNavigate()
@@ -18,6 +20,19 @@ function Settings() {
     newPassword: '',
     confirmPassword: ''
   })
+
+  // Profile picture form
+  const [profilePictureFile, setProfilePictureFile] = useState(null)
+  const [profilePicturePreview, setProfilePicturePreview] = useState(userData?.profilePictureUrl || null)
+  const [uploadingPicture, setUploadingPicture] = useState(false)
+  const fileInputRef = useRef(null)
+
+  // Sync profile picture preview with userData
+  useEffect(() => {
+    if (!profilePictureFile) {
+      setProfilePicturePreview(userData?.profilePictureUrl || null)
+    }
+  }, [userData?.profilePictureUrl, profilePictureFile])
 
   const handleUpdateDisplayName = async (e) => {
     e.preventDefault()
@@ -74,6 +89,118 @@ function Settings() {
     }
   }
 
+  const handleProfilePictureChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please select an image file')
+        return
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image size must be less than 5MB')
+        return
+      }
+
+      setProfilePictureFile(file)
+      // Create preview
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setProfilePicturePreview(reader.result)
+      }
+      reader.readAsDataURL(file)
+      setError('')
+    }
+  }
+
+  const handleUploadProfilePicture = async () => {
+    if (!profilePictureFile) {
+      setError('Please select an image to upload')
+      return
+    }
+
+    setError('')
+    setSuccess('')
+    setUploadingPicture(true)
+
+    try {
+      // Delete old profile picture if it exists
+      if (userData?.profilePictureUrl && userData?.profilePictureStoragePath) {
+        try {
+          const oldFileRef = ref(storage, userData.profilePictureStoragePath)
+          await deleteObject(oldFileRef)
+        } catch (deleteError) {
+          console.error('Error deleting old profile picture:', deleteError)
+          // Continue even if deletion fails
+        }
+      }
+
+      // Upload new profile picture
+      const storagePath = `profile-pictures/${currentUser.uid}/${Date.now()}_${profilePictureFile.name}`
+      const fileRef = ref(storage, storagePath)
+      await uploadBytes(fileRef, profilePictureFile)
+      const downloadURL = await getDownloadURL(fileRef)
+
+      // Update user data
+      await updateUserData(currentUser.uid, {
+        profilePictureUrl: downloadURL,
+        profilePictureStoragePath: storagePath
+      })
+
+      setSuccess('Profile picture updated successfully!')
+      setProfilePictureFile(null)
+      setProfilePicturePreview(downloadURL)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to upload profile picture')
+    } finally {
+      setUploadingPicture(false)
+    }
+  }
+
+  const handleRemoveProfilePicture = async () => {
+    if (!userData?.profilePictureUrl) {
+      return
+    }
+
+    setError('')
+    setSuccess('')
+    setUploadingPicture(true)
+
+    try {
+      // Delete from storage
+      if (userData?.profilePictureStoragePath) {
+        try {
+          const fileRef = ref(storage, userData.profilePictureStoragePath)
+          await deleteObject(fileRef)
+        } catch (deleteError) {
+          console.error('Error deleting profile picture:', deleteError)
+        }
+      }
+
+      // Update user data
+      await updateUserData(currentUser.uid, {
+        profilePictureUrl: '',
+        profilePictureStoragePath: ''
+      })
+
+      setSuccess('Profile picture removed successfully!')
+      setProfilePicturePreview(null)
+      setProfilePictureFile(null)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to remove profile picture')
+    } finally {
+      setUploadingPicture(false)
+    }
+  }
+
   const isAdmin = userData?.admin === true
 
   return (
@@ -118,6 +245,73 @@ function Settings() {
           {/* Account Settings Section */}
           <div className="mb-8">
             <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-4">Account Settings</h2>
+            
+            {/* Profile Picture */}
+            <div className="mb-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-700 mb-4">Profile Picture</h3>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                {/* Profile Picture Preview */}
+                <div className="flex-shrink-0">
+                  {profilePicturePreview ? (
+                    <img
+                      src={profilePicturePreview}
+                      alt="Profile"
+                      className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center border-4 border-white shadow-md">
+                      <span className="text-2xl font-bold text-blue-700">
+                        {(userData?.displayName || currentUser?.email?.split('@')[0] || 'U')
+                          .split(' ')
+                          .map(n => n[0])
+                          .join('')
+                          .toUpperCase()
+                          .slice(0, 2)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Upload Controls */}
+                <div className="flex-1 space-y-4">
+                  <div>
+                    <label htmlFor="profilePicture" className="block text-sm font-medium text-gray-700 mb-2">
+                      Upload New Picture
+                    </label>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      id="profilePicture"
+                      accept="image/*"
+                      onChange={handleProfilePictureChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">Max size: 5MB. Supported formats: JPG, PNG, GIF</p>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-3">
+                    {profilePictureFile && (
+                      <button
+                        onClick={handleUploadProfilePicture}
+                        disabled={uploadingPicture}
+                        className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {uploadingPicture ? 'Uploading...' : 'Upload Picture'}
+                      </button>
+                    )}
+                    {userData?.profilePictureUrl && (
+                      <button
+                        onClick={handleRemoveProfilePicture}
+                        disabled={uploadingPicture}
+                        className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {uploadingPicture ? 'Removing...' : 'Remove Picture'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
             
             {/* Display Name */}
             <div className="mb-6 p-6 bg-gray-50 rounded-lg border border-gray-200">

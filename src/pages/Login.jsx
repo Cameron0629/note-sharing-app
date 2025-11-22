@@ -13,7 +13,7 @@ function Login() {
   // Redirect if already logged in
   useEffect(() => {
     if (!authLoading && currentUser) {
-      navigate('/browse-notes', { replace: true })
+      navigate('/profile', { replace: true })
     }
   }, [currentUser, authLoading, navigate])
 

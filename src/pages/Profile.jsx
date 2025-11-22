@@ -30,7 +30,7 @@ function Profile() {
     tabs.find((tab) => tab.id === activeTab)?.component || CourseSelection
   , [tabs, activeTab])
 
-  const { displayName, initials } = useMemo(() => {
+  const { displayName, initials, profilePictureUrl } = useMemo(() => {
     const name = userData?.displayName || currentUser?.email?.split('@')[0] || 'User'
     const init = name
       .split(' ')
@@ -38,8 +38,12 @@ function Profile() {
       .join('')
       .toUpperCase()
       .slice(0, 2) || 'U'
-    return { displayName: name, initials: init }
-  }, [userData?.displayName, currentUser?.email])
+    return { 
+      displayName: name, 
+      initials: init,
+      profilePictureUrl: userData?.profilePictureUrl || null
+    }
+  }, [userData?.displayName, userData?.profilePictureUrl, currentUser?.email])
 
   const handleLogout = useCallback(async () => {
     try {
@@ -63,9 +67,17 @@ function Profile() {
           <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-4 sm:p-8 text-white">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <div className="w-16 h-16 sm:w-24 sm:h-24 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-white text-2xl sm:text-4xl font-bold border-4 border-white">
-                  {initials}
-                </div>
+                {profilePictureUrl ? (
+                  <img
+                    src={profilePictureUrl}
+                    alt={displayName}
+                    className="w-16 h-16 sm:w-24 sm:h-24 rounded-full object-cover border-4 border-white shadow-lg"
+                  />
+                ) : (
+                  <div className="w-16 h-16 sm:w-24 sm:h-24 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-white text-2xl sm:text-4xl font-bold border-4 border-white">
+                    {initials}
+                  </div>
+                )}
                 <div className="ml-4 sm:ml-6">
                   <h1 className="text-xl sm:text-3xl font-bold truncate">{displayName}</h1>
                   <p className="text-purple-100 text-sm sm:text-base truncate">{currentUser?.email}</p>
