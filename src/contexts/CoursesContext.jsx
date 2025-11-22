@@ -8,11 +8,31 @@ const CoursesContext = createContext()
 export function CoursesProvider({ children }) {
   const [courses, setCourses] = useState([])
   const [loading, setLoading] = useState(true)
-  const { currentUser, userData } = useAuth()
+  const { currentUser, userData, loading: authLoading } = useAuth()
 
   // Listen to courses in Firestore
   useEffect(() => {
-    if (!userData?.schoolId) {
+    // Wait for auth to finish loading
+    if (authLoading) {
+      setLoading(true)
+      return
+    }
+
+    // If no current user, clear courses
+    if (!currentUser) {
+      setCourses([])
+      setLoading(false)
+      return
+    }
+
+    // If userData hasn't loaded yet (still null/undefined), wait
+    if (!userData) {
+      setLoading(true)
+      return
+    }
+
+    // If user has no schoolId, clear courses
+    if (!userData.schoolId || userData.schoolId === '') {
       setCourses([])
       setLoading(false)
       return
@@ -72,7 +92,7 @@ export function CoursesProvider({ children }) {
         unsubscribe()
       }
     }
-  }, [userData?.schoolId])
+  }, [currentUser, userData, authLoading])
 
   // Add a new course to Firestore
   const addCourse = useCallback(async (courseData) => {

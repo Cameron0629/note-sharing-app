@@ -3,9 +3,10 @@ import { useSchools } from '../../contexts/SchoolsContext'
 import { useAuth } from '../../contexts/AuthContext'
 
 function SchoolSelection() {
-  const { schools, loading, addSchool } = useSchools()
-  const { currentUser, userData, updateUserData } = useAuth()
+  const { schools, loading: schoolsLoading, addSchool } = useSchools()
+  const { currentUser, userData, updateUserData, loading: authLoading } = useAuth()
   const [selectedSchool, setSelectedSchool] = useState(userData?.schoolId || null)
+  const loading = schoolsLoading || authLoading
   const [showAddForm, setShowAddForm] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
@@ -58,7 +59,8 @@ function SchoolSelection() {
     }
   }
 
-  if (loading) {
+  // Show loading if auth is still loading or schools are loading
+  if (authLoading || schoolsLoading) {
     return (
       <div className="text-center py-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto mb-4"></div>

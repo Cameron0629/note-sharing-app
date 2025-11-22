@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { collection, query, where, getDocs } from 'firebase/firestore'
+import { db } from '../firebase'
 
 function Signup() {
   const [email, setEmail] = useState('')
@@ -27,10 +29,27 @@ function Signup() {
       return
     }
 
+    // Check if displayName is provided and if it's already taken
+    if (displayName.trim()) {
+      try {
+        const usersRef = collection(db, 'users')
+        const q = query(usersRef, where('displayName', '==', displayName.trim()))
+        const querySnapshot = await getDocs(q)
+        
+        if (!querySnapshot.empty) {
+          setError('This username is already taken. Please choose a different one.')
+          return
+        }
+      } catch (err) {
+        console.error('Error checking username:', err)
+        // Continue with signup if check fails (don't block user)
+      }
+    }
+
     setLoading(true)
 
     try {
-      await signup(email, password, displayName)
+      await signup(email, password, displayName.trim())
       // Redirect to email verification page
       navigate('/verify-email')
     } catch (err) {
@@ -67,7 +86,7 @@ function Signup() {
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
               placeholder="Enter your name (optional)"
             />
-            <p className="mt-1 text-xs text-gray-500">This will be shown as your author name</p>
+            <p className="mt-1 text-xs text-gray-500">This will be shown as your author name. Usernames must be unique.</p>
           </div>
 
           <div>

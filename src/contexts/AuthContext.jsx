@@ -51,6 +51,7 @@ export function AuthProvider({ children }) {
         uid: user.uid,
         displayName: displayName || '',
         email: user.email || '',
+        bio: '',
         totalPoints: 0,
         schoolId: '',
         favoritedPosts: [],

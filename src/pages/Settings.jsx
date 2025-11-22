@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
-import { storage } from '../firebase'
+import { collection, query, where, getDocs } from 'firebase/firestore'
+import { storage, db } from '../firebase'
 
 function Settings() {
   const navigate = useNavigate()
@@ -13,6 +14,9 @@ function Settings() {
 
   // Username/Display Name form
   const [displayName, setDisplayName] = useState(userData?.displayName || '')
+  
+  // Bio form
+  const [bio, setBio] = useState(userData?.bio || '')
   
   // Password form
   const [passwordData, setPasswordData] = useState({
@@ -34,6 +38,11 @@ function Settings() {
     }
   }, [userData?.profilePictureUrl, profilePictureFile])
 
+  // Sync bio with userData
+  useEffect(() => {
+    setBio(userData?.bio || '')
+  }, [userData?.bio])
+
   const handleUpdateDisplayName = async (e) => {
     e.preventDefault()
     setError('')
@@ -45,13 +54,46 @@ function Settings() {
         throw new Error('Display name cannot be empty')
       }
 
+      const trimmedName = displayName.trim()
+      
+      // Check if username is already taken by another user
+      const usersRef = collection(db, 'users')
+      const q = query(usersRef, where('displayName', '==', trimmedName))
+      const querySnapshot = await getDocs(q)
+      
+      // Check if any other user (not the current user) has this displayName
+      const isTaken = querySnapshot.docs.some(doc => doc.id !== currentUser.uid)
+      
+      if (isTaken) {
+        throw new Error('This username is already taken. Please choose a different one.')
+      }
+
       await updateUserData(currentUser.uid, {
-        displayName: displayName.trim()
+        displayName: trimmedName
       })
       setSuccess('Display name updated successfully!')
-      setDisplayName(displayName.trim())
+      setDisplayName(trimmedName)
     } catch (err) {
       setError(err.message || 'Failed to update display name')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleUpdateBio = async (e) => {
+    e.preventDefault()
+    setError('')
+    setSuccess('')
+    setLoading(true)
+
+    try {
+      await updateUserData(currentUser.uid, {
+        bio: bio.trim()
+      })
+      setSuccess('Bio updated successfully!')
+      setBio(bio.trim())
+    } catch (err) {
+      setError(err.message || 'Failed to update bio')
     } finally {
       setLoading(false)
     }
@@ -315,7 +357,7 @@ function Settings() {
             
             {/* Display Name */}
             <div className="mb-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-700 mb-4">Display Name</h3>
+              <h3 className="text-lg font-semibold text-gray-700 mb-4">Display Name (Username)</h3>
               <form onSubmit={handleUpdateDisplayName} className="space-y-4">
                 <div>
                   <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 mb-2">
@@ -329,6 +371,7 @@ function Settings() {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter your display name"
                   />
+                  <p className="mt-1 text-xs text-gray-500">Usernames must be unique. This will be shown as your author name.</p>
                 </div>
                 <button
                   type="submit"
@@ -336,6 +379,35 @@ function Settings() {
                   className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Updating...' : 'Update Display Name'}
+                </button>
+              </form>
+            </div>
+
+            {/* Bio */}
+            <div className="mb-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-700 mb-4">Bio</h3>
+              <form onSubmit={handleUpdateBio} className="space-y-4">
+                <div>
+                  <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-2">
+                    Bio
+                  </label>
+                  <textarea
+                    id="bio"
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    rows={4}
+                    maxLength={500}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Tell us about yourself..."
+                  />
+                  <p className="mt-1 text-xs text-gray-500">{bio.length}/500 characters</p>
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading || bio.trim() === (userData?.bio || '')}
+                  className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Updating...' : 'Update Bio'}
                 </button>
               </form>
             </div>

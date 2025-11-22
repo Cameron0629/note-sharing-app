@@ -14,6 +14,7 @@ export function SchoolsProvider({ children }) {
   useEffect(() => {
     // Don't set up listener until auth is ready
     if (authLoading) {
+      setLoading(true)
       return
     }
 

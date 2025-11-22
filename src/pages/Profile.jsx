@@ -78,9 +78,12 @@ function Profile() {
                     {initials}
                   </div>
                 )}
-                <div className="ml-4 sm:ml-6">
+                <div className="ml-4 sm:ml-6 flex-1 min-w-0">
                   <h1 className="text-xl sm:text-3xl font-bold truncate">{displayName}</h1>
                   <p className="text-purple-100 text-sm sm:text-base truncate">{currentUser?.email}</p>
+                  {userData?.bio && (
+                    <p className="text-purple-100 text-sm sm:text-base mt-2 line-clamp-2">{userData.bio}</p>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-2 sm:gap-3">

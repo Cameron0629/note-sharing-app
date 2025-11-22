@@ -3,11 +3,10 @@ import { useCourse } from '../contexts/CourseContext'
 import { useNotes } from '../contexts/NotesContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useCourses } from '../contexts/CoursesContext'
-import CourseSelectionPrompt from '../components/CourseSelectionPrompt'
 import { useNavigate } from 'react-router-dom'
 
 function PostNotes() {
-  const { selectedCourse, clearCourse } = useCourse()
+  const { selectedCourse, clearCourse, selectCourse } = useCourse()
   const { addNote } = useNotes()
   const { currentUser, userData } = useAuth()
   const { courses } = useCourses()
@@ -20,6 +19,8 @@ function PostNotes() {
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [filterCourseId, setFilterCourseId] = useState(selectedCourse?.id || '')
+  const [filterFavorited, setFilterFavorited] = useState(false)
 
   // Clear course if it doesn't belong to user's school
   useEffect(() => {
@@ -27,10 +28,27 @@ function PostNotes() {
       const course = courses.find(c => c.id === selectedCourse.id)
       if (!course || course.schoolId !== userData.schoolId) {
         clearCourse()
-        navigate('/profile#courses')
+        setFilterCourseId('')
       }
     }
-  }, [selectedCourse, userData?.schoolId, courses, clearCourse, navigate])
+  }, [selectedCourse, userData?.schoolId, courses, clearCourse])
+
+  // Sync filterCourseId with selectedCourse
+  useEffect(() => {
+    if (selectedCourse?.id) {
+      setFilterCourseId(selectedCourse.id)
+    }
+  }, [selectedCourse?.id])
+
+  // Get filtered courses based on favorite filter
+  const availableCourses = courses.filter(c => {
+    if (c.schoolId !== userData?.schoolId) return false
+    if (filterFavorited) {
+      const favoritedCourseIds = userData?.favoritedCourses || []
+      return favoritedCourseIds.includes(c.id)
+    }
+    return true
+  })
 
   if (!userData?.schoolId) {
     return (
@@ -50,9 +68,6 @@ function PostNotes() {
     )
   }
 
-  if (!selectedCourse) {
-    return <CourseSelectionPrompt message="Please select a course to post notes." />
-  }
 
   const handleInputChange = (e) => {
     const { name, value, files } = e.target
@@ -66,6 +81,14 @@ function PostNotes() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    
+    // Check if a course is selected
+    const courseToUse = selectedCourse || (filterCourseId ? courses.find(c => c.id === filterCourseId) : null)
+    if (!courseToUse) {
+      setError('Please select a course to post notes')
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
@@ -74,7 +97,7 @@ function PostNotes() {
         description: formData.description,
         tags: formData.tags,
         file: formData.file,
-        courseId: selectedCourse.id
+        courseId: courseToUse.id
       })
 
       // Reset form
@@ -99,9 +122,6 @@ function PostNotes() {
         <div className="bg-white rounded-lg shadow-lg p-4 sm:p-8">
           <div className="mb-4 sm:mb-6">
             <h1 className="text-2xl sm:text-4xl font-bold text-gray-800 mb-2">Post Notes</h1>
-            <p className="text-sm sm:text-base text-gray-600">
-              Course: <span className="font-semibold">{selectedCourse.code} - {selectedCourse.name}</span>
-            </p>
           </div>
 
           {error && (
@@ -109,6 +129,66 @@ function PostNotes() {
               {error}
             </div>
           )}
+
+          {/* Course Selection Filter */}
+          <div className="mb-6 space-y-4">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Course:</label>
+                <select
+                  value={filterCourseId}
+                  onChange={(e) => {
+                    setFilterCourseId(e.target.value)
+                    if (e.target.value) {
+                      const course = availableCourses.find(c => c.id === e.target.value)
+                      if (course) {
+                        selectCourse(course)
+                      }
+                    } else {
+                      clearCourse()
+                    }
+                  }}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="">Select a course...</option>
+                  {availableCourses.length === 0 ? (
+                    <option value="" disabled>
+                      {filterFavorited ? 'No favorited courses available' : 'No courses available'}
+                    </option>
+                  ) : (
+                    availableCourses.map((course) => (
+                      <option key={course.id} value={course.id}>
+                        {course.code} - {course.name}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+              <div className="sm:w-auto flex items-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilterFavorited(!filterFavorited)
+                    // Clear selection when toggling filter
+                    setFilterCourseId('')
+                    clearCourse()
+                  }}
+                  className={`w-full sm:w-auto px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors font-medium ${
+                    filterFavorited
+                      ? 'bg-purple-500 border-purple-500 text-white hover:bg-purple-600'
+                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Show Favorited
+                </button>
+              </div>
+            </div>
+            {filterCourseId && selectedCourse && (
+              <p className="text-sm text-gray-600">
+                Selected: <span className="font-semibold">{selectedCourse.code} - {selectedCourse.name}</span>
+              </p>
+            )}
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
@@ -179,7 +259,7 @@ function PostNotes() {
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !filterCourseId}
                 className="flex-1 sm:flex-initial px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? 'Posting...' : 'Post Note'}
@@ -200,3 +280,4 @@ function PostNotes() {
 }
 
 export default PostNotes
+
