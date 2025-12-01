@@ -5,17 +5,39 @@ import { useAuth } from './AuthContext'
 
 const SchoolsContext = createContext()
 
+/**
+ * SchoolsContext.jsx - Schools context provider
+ * 
+ * This context manages all school data from Firestore.
+ * Schools are public data and don't require authentication to view.
+ * 
+ * Used throughout the application:
+ * - SchoolSelection component: Displays and manages school selection
+ * - Leaderboard page: Filters leaderboard by school
+ * - Profile page: Shows school selection tab
+ * 
+ * Provides:
+ * - schools: Array of all schools from Firestore
+ * - loading: Boolean indicating if schools are being loaded
+ * - addSchool: Function to add a new school to Firestore
+ * 
+ * Firestore Collection: 'schools'
+ * Document Structure:
+ * - id: School document ID
+ * - name: School name (required, unique)
+ * - location: School location (optional)
+ * - createdAt: ISO timestamp of creation
+ * - createdBy: User ID who created the school
+ */
+
 export function SchoolsProvider({ children }) {
   const [schools, setSchools] = useState([])
   const [loading, setLoading] = useState(true)
   const { currentUser, loading: authLoading } = useAuth()
 
   useEffect(() => {
-    if (authLoading) {
-      setLoading(true)
-      return
-    }
-
+    // Schools are public data - load them immediately, don't wait for auth
+    // This ensures schools are available as soon as possible, especially for new users
     setLoading(true)
     const schoolsRef = collection(db, 'schools')
     const q = query(schoolsRef, orderBy('name', 'asc'))
@@ -23,7 +45,6 @@ export function SchoolsProvider({ children }) {
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        // Use a Map to prevent duplicates by ID
         const schoolsMap = new Map()
         snapshot.docs.forEach(doc => {
           schoolsMap.set(doc.id, {
@@ -44,7 +65,7 @@ export function SchoolsProvider({ children }) {
     return () => {
       unsubscribe()
     }
-  }, [authLoading])
+  }, []) // Remove authLoading dependency - schools should load immediately
 
   // Add a new school to Firestore
   const addSchool = useCallback(async (schoolData) => {

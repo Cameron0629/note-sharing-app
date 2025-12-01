@@ -1,14 +1,36 @@
+
+/**
+ * VerifyEmail.jsx - Email verification page
+ * 
+ * This page is shown to users who have signed up but haven't verified their email yet.
+ * Users can resend verification emails and check their verification status.
+ * 
+ * Route: /verify-email (public route, but requires authentication)
+ * Accessed from: Signup page (after successful registration)
+ * 
+ * Features:
+ * - Displays user's email address
+ * - Resend verification email button (with cooldown)
+ * - Check verification status button
+ * - Cancel verification button (signs out and returns to signup)
+ * - Automatic redirect to profile when verified
+ * 
+ * Note: If user tries to go back to signup while authenticated but not verified,
+ * they will be redirected back here. Use "Cancel Verification" to sign out and return to signup.
+ */
+
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
 function VerifyEmail() {
-  const { currentUser, resendVerificationEmail } = useAuth()
+  const { currentUser, resendVerificationEmail, logout } = useAuth()
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [checking, setChecking] = useState(true)
   const [cooldown, setCooldown] = useState(0)
+  const [cancelling, setCancelling] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -81,6 +103,28 @@ function VerifyEmail() {
     }
   }
 
+  /**
+   * Cancel verification - signs out user and returns to signup page
+   * This allows users to sign up with a different email if they can't verify the current one
+   */
+  const handleCancelVerification = async () => {
+    if (!window.confirm('Are you sure you want to cancel verification? You will be signed out and can sign up again with a different email.')) {
+      return
+    }
+
+    setCancelling(true)
+    setError('')
+    setMessage('')
+
+    try {
+      await logout()
+      navigate('/signup', { replace: true })
+    } catch (err) {
+      setError(err.message || 'Failed to cancel verification')
+      setCancelling(false)
+    }
+  }
+
   if (checking) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-100 flex items-center justify-center p-4 sm:p-8">
@@ -148,6 +192,19 @@ function VerifyEmail() {
                 ? `Resend Email (Wait ${cooldown}s)`
                 : 'Resend Verification Email'}
           </button>
+
+          <div className="pt-4 border-t border-gray-200">
+            <button
+              onClick={handleCancelVerification}
+              disabled={cancelling}
+              className="w-full px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {cancelling ? 'Signing out...' : 'Cancel Verification'}
+            </button>
+            <p className="mt-2 text-xs text-gray-500 text-center">
+              Can't verify your email? Cancel to sign out and sign up with a different email address.
+            </p>
+          </div>
         </div>
       </div>
     </div>
