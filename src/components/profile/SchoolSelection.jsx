@@ -81,6 +81,15 @@ function SchoolSelection() {
         Select your school to connect with other students and access school-specific content.
       </p>
 
+      {/* Help message for users who don't see schools */}
+      {!loading && schools.length === 0 && (
+        <div className="mb-4 sm:mb-6 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <strong>Note:</strong> If schools are not visible, please refresh the page. If the issue persists, you can add a new school using the button above.
+          </p>
+        </div>
+      )}
+
       {showAddForm && (
         <div className="mb-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Add New School</h3>
